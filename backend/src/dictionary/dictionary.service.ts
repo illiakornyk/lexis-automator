@@ -1,13 +1,32 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class DictionaryService {
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    private httpService: HttpService,
+  ) {}
 
   getApiUrl() {
     return this.configService.get<string>('FREE_DICTIONARY_API_URL');
   }
 
+async getDefinition(word: string) {
+  const baseUrl = this.getApiUrl();
+  const url = `${baseUrl}${encodeURIComponent(word)}`;
+
+  try {
+    const response = await firstValueFrom(this.httpService.get(url));
+    return response.data;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      throw new HttpException(`Word "${word}" not found`, HttpStatus.NOT_FOUND);
+    }
+    throw new HttpException('Error fetching word definition', HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+}
 
 }
