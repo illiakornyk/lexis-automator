@@ -2,6 +2,7 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { DictionaryResponse } from './interfaces/dictionary-response.interface';
 
 @Injectable()
 export class DictionaryService {
@@ -14,19 +15,18 @@ export class DictionaryService {
     return this.configService.get<string>('FREE_DICTIONARY_API_URL');
   }
 
-async getDefinition(word: string) {
-  const baseUrl = this.getApiUrl();
-  const url = `${baseUrl}${encodeURIComponent(word)}`;
+  async getDefinition(word: string): Promise<DictionaryResponse> {
+    const baseUrl = this.getApiUrl();
+    const url = `${baseUrl}${encodeURIComponent(word)}`;
 
-  try {
-    const response = await firstValueFrom(this.httpService.get(url));
-    return response.data;
-  } catch (error) {
-    if (error.response?.status === 404) {
-      throw new HttpException(`Word "${word}" not found`, HttpStatus.NOT_FOUND);
+    try {
+      const response = await firstValueFrom(this.httpService.get<DictionaryResponse>(url));
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        throw new HttpException(`Word "${word}" not found`, HttpStatus.NOT_FOUND);
+      }
+      throw new HttpException('Error fetching word definition', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    throw new HttpException('Error fetching word definition', HttpStatus.INTERNAL_SERVER_ERROR);
   }
-}
-
 }
