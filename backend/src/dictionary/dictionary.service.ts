@@ -2,7 +2,7 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { DictionaryResponse } from './interfaces/dictionary-response.interface';
+import { DictionaryResponse } from '../types/dictionary-response.type';
 
 @Injectable()
 export class DictionaryService {
