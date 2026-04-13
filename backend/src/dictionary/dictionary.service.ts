@@ -20,13 +20,26 @@ export class DictionaryService {
     const url = `${baseUrl}${encodeURIComponent(word)}`;
 
     try {
-      const response = await firstValueFrom(this.httpService.get<DictionaryResponse>(url));
+      const response = await firstValueFrom(
+        this.httpService.get<DictionaryResponse>(url),
+      );
       return response.data;
-    } catch (error) {
-      if (error.response?.status === 404) {
-        throw new HttpException(`Word "${word}" not found`, HttpStatus.NOT_FOUND);
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'response' in error &&
+        (error as any).response?.status === 404
+      ) {
+        throw new HttpException(
+          `Word "${word}" not found`,
+          HttpStatus.NOT_FOUND,
+        );
       }
-      throw new HttpException('Error fetching word definition', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error fetching word definition',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

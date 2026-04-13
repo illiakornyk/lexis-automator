@@ -7,7 +7,9 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Lexis Automator API')
-    .setDescription('API for generating Anki cards and fetching dictionary data')
+    .setDescription(
+      'API for generating Anki cards and fetching dictionary data',
+    )
     .setVersion('1.0')
     .addTag('dictionary')
     .build();
@@ -16,4 +18,4 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3000);
 }
-bootstrap();
+void bootstrap();
