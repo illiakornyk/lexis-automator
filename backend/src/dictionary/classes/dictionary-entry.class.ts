@@ -12,7 +12,10 @@ export class Phonetic {
   @ApiProperty({ required: false, example: '/həˈloʊ/' })
   text?: string;
 
-  @ApiProperty({ example: 'https://api.dictionaryapi.dev/media/pronunciations/en/hello-au.mp3' })
+  @ApiProperty({
+    example:
+      'https://api.dictionaryapi.dev/media/pronunciations/en/hello-au.mp3',
+  })
   audio: string;
 
   @ApiProperty({ required: false })
