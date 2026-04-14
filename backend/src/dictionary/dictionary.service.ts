@@ -12,7 +12,7 @@ export class DictionaryService {
   ) {}
 
   getApiUrl() {
-    return this.configService.get<string>('FREE_DICTIONARY_API_URL');
+    return this.configService.getOrThrow<string>('FREE_DICTIONARY_API_URL');
   }
 
   async getDefinition(word: string): Promise<DictionaryResponse> {
