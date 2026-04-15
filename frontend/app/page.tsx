@@ -22,6 +22,7 @@ export default function LexisAutomatorUI() {
   
   const [accent, setAccent] = useState("US");
   const [gender, setGender] = useState("FEMALE");
+  const [generatingExamples, setGeneratingExamples] = useState<Record<string, boolean>>({});
 
   const toggleSelection = (id: string) => {
     setSelectedDefs((prev) =>
@@ -48,6 +49,26 @@ export default function LexisAutomatorUI() {
       toast.error(error.message || "Failed to fetch word definition.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGenerateExample = async (defId: string, mIdx: number, dIdx: number, definitionStr: string) => {
+    setGeneratingExamples(prev => ({ ...prev, [defId]: true }));
+    try {
+      const res = await LexisApi.generateExample(wordData!.word, definitionStr);
+      
+      // Update wordData optimally so it renders immediately
+      setWordData(prev => {
+        if (!prev) return prev;
+        const newData = JSON.parse(JSON.stringify(prev)) as DictionaryEntry;
+        newData.meanings[mIdx].definitions[dIdx].example = res.example;
+        return newData;
+      });
+      toast.success("AI Example generated successfully!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to generate example.");
+    } finally {
+       setGeneratingExamples(prev => ({ ...prev, [defId]: false }));
     }
   };
 
@@ -245,16 +266,30 @@ export default function LexisAutomatorUI() {
                             <div className="flex flex-wrap gap-2">
                               {def.example ? (
                                 <>
-                                  <Button variant="outline" size="sm" className="h-8 shadow-sm text-slate-600" onClick={() => toast('LLM Gen stub')}>
-                                    <RefreshCw className="mr-2 h-3 w-3" /> Regenerate Example
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="h-8 shadow-sm text-slate-600" 
+                                    onClick={() => handleGenerateExample(defId, mIdx, dIdx, def.definition)}
+                                    disabled={generatingExamples[defId]}
+                                  >
+                                    <RefreshCw className={`mr-2 h-3 w-3 ${generatingExamples[defId] ? 'animate-spin' : ''}`} /> 
+                                    Regenerate Example
                                   </Button>
                                   <Button variant="secondary" size="sm" className="h-8 shadow-sm bg-indigo-100 text-indigo-700 hover:bg-indigo-200" onClick={() => toast('TTS logic stub')}>
                                     <FileAudio className="mr-2 h-3 w-3" /> Generate Audio
                                   </Button>
                                 </>
                               ) : (
-                                <Button variant="default" size="sm" className="h-8 shadow-sm bg-indigo-600 hover:bg-indigo-700" onClick={() => toast('LLM Gen stub')}>
-                                  <RefreshCw className="mr-2 h-3 w-3" /> AI Generate Example
+                                <Button 
+                                  variant="default" 
+                                  size="sm" 
+                                  className="h-8 shadow-sm bg-indigo-600 hover:bg-indigo-700" 
+                                  onClick={() => handleGenerateExample(defId, mIdx, dIdx, def.definition)}
+                                  disabled={generatingExamples[defId]}
+                                >
+                                  <RefreshCw className={`mr-2 h-3 w-3 ${generatingExamples[defId] ? 'animate-spin' : ''}`} /> 
+                                  AI Generate Example
                                 </Button>
                               )}
                             </div>
