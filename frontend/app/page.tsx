@@ -23,6 +23,8 @@ export default function LexisAutomatorUI() {
   const [accent, setAccent] = useState("US");
   const [gender, setGender] = useState("FEMALE");
   const [generatingExamples, setGeneratingExamples] = useState<Record<string, boolean>>({});
+  const [generatingAudio, setGeneratingAudio] = useState<Record<string, boolean>>({});
+  const [generatedAudio, setGeneratedAudio] = useState<Record<string, string>>({});
 
   const toggleSelection = (id: string) => {
     setSelectedDefs((prev) =>
@@ -70,6 +72,33 @@ export default function LexisAutomatorUI() {
     } finally {
        setGeneratingExamples(prev => ({ ...prev, [defId]: false }));
     }
+  };
+
+  const handleGenerateAudio = async (defId: string, text: string) => {
+    if (!text) return;
+    setGeneratingAudio(prev => ({ ...prev, [defId]: true }));
+    try {
+      const res = await LexisApi.generateAudio(
+        text,
+        accent as 'US' | 'GB',
+        gender as 'MALE' | 'FEMALE'
+      );
+      const audioSrc = `data:audio/webm;base64,${res.audioBase64}`;
+      // Store the audio data URL so it can be replayed
+      setGeneratedAudio(prev => ({ ...prev, [defId]: audioSrc }));
+      // Play immediately after generating
+      new Audio(audioSrc).play();
+      toast.success("Audio generated!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to generate audio.");
+    } finally {
+      setGeneratingAudio(prev => ({ ...prev, [defId]: false }));
+    }
+  };
+
+  const handlePlayAudio = (defId: string) => {
+    const src = generatedAudio[defId];
+    if (src) new Audio(src).play();
   };
 
   const handleDownload = () => {
@@ -276,9 +305,29 @@ export default function LexisAutomatorUI() {
                                     <RefreshCw className={`mr-2 h-3 w-3 ${generatingExamples[defId] ? 'animate-spin' : ''}`} /> 
                                     Regenerate Example
                                   </Button>
-                                  <Button variant="secondary" size="sm" className="h-8 shadow-sm bg-indigo-100 text-indigo-700 hover:bg-indigo-200" onClick={() => toast('TTS logic stub')}>
-                                    <FileAudio className="mr-2 h-3 w-3" /> Generate Audio
-                                  </Button>
+                                  {generatedAudio[defId] ? (
+                                    // Audio already generated — show persistent Play button
+                                    <Button
+                                      variant="secondary"
+                                      size="sm"
+                                      className="h-8 shadow-sm bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-300"
+                                      onClick={() => handlePlayAudio(defId)}
+                                    >
+                                      <Volume2 className="mr-2 h-3 w-3" /> Play Audio
+                                    </Button>
+                                  ) : (
+                                    // No audio yet — show Generate button
+                                    <Button 
+                                      variant="secondary" 
+                                      size="sm" 
+                                      className="h-8 shadow-sm bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+                                      onClick={() => handleGenerateAudio(defId, def.example!)}
+                                      disabled={generatingAudio[defId]}
+                                    >
+                                      <FileAudio className={`mr-2 h-3 w-3 ${generatingAudio[defId] ? 'animate-pulse' : ''}`} /> 
+                                      {generatingAudio[defId] ? 'Generating...' : 'Generate Audio'}
+                                    </Button>
+                                  )}
                                 </>
                               ) : (
                                 <Button 
