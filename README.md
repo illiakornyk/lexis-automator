@@ -22,8 +22,8 @@ This project automates all of those steps into a single web workflow.
 2. **Select** — The user sees a list of definitions grouped by part of speech and selects the ones they want on their card.
 3. **Examples** — Each definition shows an example sentence from the dictionary. If no example exists, the user can click a button to generate one via an LLM.
 4. **Audio** — The system generates TTS audio for the word and the example sentences.
-5. **Preview** — The user sees a preview of the card before exporting.
-6. **Export** — The user downloads a ZIP archive containing a `CSV` file and `MP3` audio files, ready to import into Anki.
+5. **Web UI & Selection** — The user interacts with a web interface to preview card options and select exactly which definitions/senses should be included in the final export.
+6. **Export** — The user downloads a ZIP archive containing a `CSV` file and `MP3` audio files.
 
 ---
 
@@ -36,19 +36,19 @@ This project automates all of those steps into a single web workflow.
 | **LLM (examples)** | TBD (stub in MVP) |
 | **TTS (audio)** | TBD (stub in MVP) |
 | **API Docs** | Swagger (`/api`) |
-| **Frontend** | TBD |
+| **Frontend** | TBD (React/Next.js suggested) |
 
 ---
 
 ## Current Progress
 
 - [x] **Project setup**: NestJS backend with `@nestjs/config`, `@nestjs/axios`, and Swagger configured.
-- [x] **Dictionary API integration**: `GET /dictionary/:word` endpoint that fetches and returns definitions from the Free Dictionary API, with proper error handling (404 for unknown words).
-- [x] **TypeScript types**: Classes and interfaces created for the full API response structure (`DictionaryEntry`, `Meaning`, `Phonetic`, `Definition`).
-- [x] **API Documentation**: Swagger available at `/api` with documented request params and response schemas.
-- [ ] LLM example generation (stub → real)
+- [x] **Dictionary API integration**: `GET /dictionary/:word` endpoint that fetches and returns definitions from the Free Dictionary API.
+- [x] **TypeScript types**: Classes and interfaces created for the full API response structure.
+- [x] **API Documentation**: Swagger available at `/api`.
+- [x] LLM example generation (stub → real)
 - [ ] TTS audio generation (stub → real)
-- [ ] Card preview UI
+- [ ] **Web UI (Selection logic)**: Interface for the user to configure and select specific card data.
 - [ ] CSV/ZIP export
 
 ---
