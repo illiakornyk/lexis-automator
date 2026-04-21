@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, Download, RefreshCw, CheckCircle2, BookOpen, Volume2 } from "lucide-react";
+import { Search, Download, RefreshCw, CheckCircle2, BookOpen, Volume2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +23,13 @@ export default function LexisAutomatorUI() {
   const [accent, setAccent] = useState("US");
   const [gender, setGender] = useState("FEMALE");
   const [generatingExamples, setGeneratingExamples] = useState<Record<string, boolean>>({});
+
+  // Card type toggles for Anki export
+  const [includeRecognition, setIncludeRecognition] = useState(true);
+  const [includeProduction, setIncludeProduction] = useState(false);
+  const [includeCloze, setIncludeCloze] = useState(false);
+  const [includeTypeIn, setIncludeTypeIn] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
 
   const toggleSelection = (id: string) => {
@@ -75,8 +82,73 @@ export default function LexisAutomatorUI() {
 
 
 
-  const handleDownload = () => {
-    toast.success("Downloading Anki package logic not yet implemented!");
+  const handleDownload = async () => {
+    if (!wordData) return;
+
+    // Validate: at least one card type must be selected
+    if (!includeRecognition && !includeProduction && !includeCloze && !includeTypeIn) {
+      toast.error("Please select at least one card type.");
+      return;
+    }
+
+    // Build cards array from selected definitions
+    const cards: Array<{ word: string; partOfSpeech: string; phonetic: string; definition: string; example: string }> = [];
+    
+    for (const defId of selectedDefs) {
+      // Parse defId format: "partOfSpeech-mIdx-dIdx"
+      const parts = defId.split('-');
+      const mIdx = parseInt(parts[parts.length - 2]);
+      const dIdx = parseInt(parts[parts.length - 1]);
+      const meaning = wordData.meanings[mIdx];
+      const def = meaning?.definitions[dIdx];
+
+      if (!def) continue;
+
+      // Require an example for export
+      if (!def.example) {
+        toast.error(`Please generate an example for: "${def.definition.slice(0, 50)}..."`);
+        return;
+      }
+
+      const phonetic = wordData.phonetics?.find(p => p.text)?.text || '';
+
+      cards.push({
+        word: wordData.word,
+        partOfSpeech: meaning.partOfSpeech,
+        phonetic,
+        definition: def.definition,
+        example: def.example,
+      });
+    }
+
+    setIsExporting(true);
+    try {
+      const blob = await LexisApi.exportAnki({
+        deckName: `Lexis - ${wordData.word}`,
+        cards,
+        ttsSettings: { accent, gender },
+        includeRecognition,
+        includeProduction,
+        includeCloze,
+        includeTypeIn,
+      });
+
+      // Trigger browser download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `lexis_${wordData.word}.apkg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success('Anki deck downloaded successfully!');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to export Anki deck.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Helper to color-code part of speech badges
@@ -293,14 +365,16 @@ export default function LexisAutomatorUI() {
       {/* STICKY BOTTOM BAR (Only show if definitions are selected) */}
       {selectedDefs.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] z-50">
-          <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4 text-sm font-medium text-slate-600">
+          <div className="max-w-4xl mx-auto flex flex-col gap-3">
+            {/* Top row: Selected count + TTS Settings */}
+            <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-slate-600">
               <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-xs font-bold shrink-0">
                 {selectedDefs.length} Selected
               </span>
-              <span className="hidden sm:inline">TTS Settings:</span>
+              <span className="hidden sm:inline text-slate-400">|</span>
+              <span className="hidden sm:inline">TTS:</span>
               <Select value={accent} onValueChange={setAccent}>
-                <SelectTrigger className="w-[110px] md:w-[120px] h-9">
+                <SelectTrigger className="w-[110px] h-9">
                   <SelectValue placeholder="Accent" />
                 </SelectTrigger>
                 <SelectContent>
@@ -309,7 +383,7 @@ export default function LexisAutomatorUI() {
                 </SelectContent>
               </Select>
               <Select value={gender} onValueChange={setGender}>
-                <SelectTrigger className="w-[110px] md:w-[120px] h-9">
+                <SelectTrigger className="w-[100px] h-9">
                   <SelectValue placeholder="Gender" />
                 </SelectTrigger>
                 <SelectContent>
@@ -318,10 +392,41 @@ export default function LexisAutomatorUI() {
                 </SelectContent>
               </Select>
             </div>
-            
-            <Button onClick={handleDownload} className="w-full md:w-auto h-10 px-8 bg-indigo-600 hover:bg-indigo-700 shadow-md">
-              <Download className="mr-2 h-4 w-4" /> Download Anki ZIP
-            </Button>
+
+            {/* Bottom row: Card type toggles + Download button */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <span className="text-slate-500 font-medium">Card Types:</span>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <Checkbox checked={includeRecognition} onCheckedChange={(v) => setIncludeRecognition(!!v)} />
+                  <span className="text-slate-700">Recognition</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <Checkbox checked={includeProduction} onCheckedChange={(v) => setIncludeProduction(!!v)} />
+                  <span className="text-slate-700">Production</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <Checkbox checked={includeCloze} onCheckedChange={(v) => setIncludeCloze(!!v)} />
+                  <span className="text-slate-700">Cloze</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <Checkbox checked={includeTypeIn} onCheckedChange={(v) => setIncludeTypeIn(!!v)} />
+                  <span className="text-slate-700">Type-In</span>
+                </label>
+              </div>
+
+              <Button 
+                onClick={handleDownload} 
+                disabled={isExporting}
+                className="w-full md:w-auto h-10 px-8 bg-indigo-600 hover:bg-indigo-700 shadow-md"
+              >
+                {isExporting ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
+                ) : (
+                  <><Download className="mr-2 h-4 w-4" /> Download Anki Deck</>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       )}
