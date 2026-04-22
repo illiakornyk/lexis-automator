@@ -1,204 +1,47 @@
 "use client";
 
-import React, { useState } from "react";
 import { BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
-import { LexisApi } from "@/lib/api";
-import { DictionaryEntry, Meaning } from "@/lib/types";
-import { getPosBadgeColor, parseDefId } from "@/lib/utils/dictionary";
+import { Meaning } from "@/lib/types";
+import { getPosBadgeColor } from "@/lib/utils/dictionary";
 
 import { SearchHeader } from "@/components/SearchHeader";
 import { WordHeader } from "@/components/WordHeader";
 import { DefinitionCard } from "@/components/DefinitionCard";
 import { ExportBar } from "@/components/ExportBar";
+import { useLexisAutomator } from "@/hooks/useLexisAutomator";
 
 export default function LexisAutomatorUI() {
-  // --- Core state ---
-  const [searchQuery, setSearchQuery] = useState("");
-  const [wordData, setWordData] = useState<DictionaryEntry | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedDefs, setSelectedDefs] = useState<string[]>([]);
-  const [generatingExamples, setGeneratingExamples] = useState<Record<string, boolean>>({});
-
-  // --- TTS settings ---
-  const [accent, setAccent] = useState("US");
-  const [gender, setGender] = useState("FEMALE");
-
-  // --- Card type toggles ---
-  const [includeRecognition, setIncludeRecognition] = useState(true);
-  const [includeProduction, setIncludeProduction] = useState(false);
-  const [includeCloze, setIncludeCloze] = useState(false);
-  const [includeTypeIn, setIncludeTypeIn] = useState(false);
-
-  // --- Async action state ---
-  const [isExporting, setIsExporting] = useState(false);
-  const [isGeneratingAll, setIsGeneratingAll] = useState(false);
-
-  // ───────────────────────────── Handlers ─────────────────────────────
-
-  const toggleSelection = (id: string) => {
-    setSelectedDefs((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
-  };
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-
-    setIsLoading(true);
-    setWordData(null);
-    setSelectedDefs([]);
-
-    try {
-      const data = await LexisApi.getDefinition(searchQuery.trim());
-      if (data && data.length > 0) {
-        setWordData(data[0]);
-      } else {
-        toast.error("No definitions found for this word.");
-      }
-    } catch (error: any) {
-      toast.error(error.message || "Failed to fetch word definition.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGenerateExample = async (defId: string, mIdx: number, dIdx: number, definitionStr: string) => {
-    setGeneratingExamples((prev) => ({ ...prev, [defId]: true }));
-    try {
-      const res = await LexisApi.generateExample(wordData!.word, definitionStr);
-      setWordData((prev) => {
-        if (!prev) return prev;
-        const newData = JSON.parse(JSON.stringify(prev)) as DictionaryEntry;
-        newData.meanings[mIdx].definitions[dIdx].example = res.example;
-        return newData;
-      });
-      toast.success("AI Example generated successfully!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to generate example.");
-    } finally {
-      setGeneratingExamples((prev) => ({ ...prev, [defId]: false }));
-    }
-  };
-
-  const handleGenerateAllMissing = async () => {
-    if (!wordData) return;
-
-    const missing: Array<{ defId: string; mIdx: number; dIdx: number; definition: string }> = [];
-    for (const defId of selectedDefs) {
-      const { mIdx, dIdx } = parseDefId(defId);
-      const def = wordData.meanings[mIdx]?.definitions[dIdx];
-      if (def && !def.example) {
-        missing.push({ defId, mIdx, dIdx, definition: def.definition });
-      }
-    }
-
-    if (missing.length === 0) {
-      toast.info("All selected definitions already have examples!");
-      return;
-    }
-
-    setIsGeneratingAll(true);
-    let successCount = 0;
-
-    for (const item of missing) {
-      setGeneratingExamples((prev) => ({ ...prev, [item.defId]: true }));
-      try {
-        const res = await LexisApi.generateExample(wordData.word, item.definition);
-        setWordData((prev) => {
-          if (!prev) return prev;
-          const newData = JSON.parse(JSON.stringify(prev)) as DictionaryEntry;
-          newData.meanings[item.mIdx].definitions[item.dIdx].example = res.example;
-          return newData;
-        });
-        successCount++;
-      } catch (error: any) {
-        toast.error(`Failed to generate example for: "${item.definition.slice(0, 40)}..."`);
-      } finally {
-        setGeneratingExamples((prev) => ({ ...prev, [item.defId]: false }));
-      }
-    }
-
-    setIsGeneratingAll(false);
-    if (successCount > 0) {
-      toast.success(`Generated ${successCount} example${successCount > 1 ? "s" : ""} successfully!`);
-    }
-  };
-
-  const handleDownload = async () => {
-    if (!wordData) return;
-
-    if (!includeRecognition && !includeProduction && !includeCloze && !includeTypeIn) {
-      toast.error("Please select at least one card type.");
-      return;
-    }
-
-    const cards: Array<{ word: string; partOfSpeech: string; phonetic: string; definition: string; example: string }> = [];
-
-    for (const defId of selectedDefs) {
-      const { mIdx, dIdx } = parseDefId(defId);
-      const meaning = wordData.meanings[mIdx];
-      const def = meaning?.definitions[dIdx];
-      if (!def) continue;
-
-      if (!def.example) {
-        toast.error(`Please generate an example for: "${def.definition.slice(0, 50)}..."`);
-        return;
-      }
-
-      cards.push({
-        word: wordData.word,
-        partOfSpeech: meaning.partOfSpeech,
-        phonetic: wordData.phonetics?.find((p) => p.text)?.text || "",
-        definition: def.definition,
-        example: def.example,
-      });
-    }
-
-    setIsExporting(true);
-    try {
-      const blob = await LexisApi.exportAnki({
-        deckName: `Lexis - ${wordData.word}`,
-        cards,
-        ttsSettings: { accent, gender },
-        includeRecognition,
-        includeProduction,
-        includeCloze,
-        includeTypeIn,
-      });
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `lexis_${wordData.word}.apkg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      toast.success("Anki deck downloaded successfully!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to export Anki deck.");
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  // ───────────────────────────── Derived state ─────────────────────────────
-
-  const missingExamplesCount = wordData
-    ? selectedDefs.filter((defId) => {
-        const { mIdx, dIdx } = parseDefId(defId);
-        const def = wordData.meanings[mIdx]?.definitions[dIdx];
-        return def && !def.example;
-      }).length
-    : 0;
-
-  // ───────────────────────────── Render ─────────────────────────────
+  const {
+    searchQuery,
+    setSearchQuery,
+    wordData,
+    isLoading,
+    selectedDefs,
+    generatingExamples,
+    accent,
+    setAccent,
+    gender,
+    setGender,
+    includeRecognition,
+    setIncludeRecognition,
+    includeProduction,
+    setIncludeProduction,
+    includeCloze,
+    setIncludeCloze,
+    includeTypeIn,
+    setIncludeTypeIn,
+    isExporting,
+    isGeneratingAll,
+    missingExamplesCount,
+    toggleSelection,
+    handleSearch,
+    handleGenerateExample,
+    handleGenerateAllMissing,
+    handleDownload,
+  } = useLexisAutomator();
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-32">
