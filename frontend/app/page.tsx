@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, Download, RefreshCw, CheckCircle2, BookOpen, Volume2, Loader2 } from "lucide-react";
+import { Search, Download, RefreshCw, CheckCircle2, BookOpen, Volume2, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +30,7 @@ export default function LexisAutomatorUI() {
   const [includeCloze, setIncludeCloze] = useState(false);
   const [includeTypeIn, setIncludeTypeIn] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isGeneratingAll, setIsGeneratingAll] = useState(false);
 
 
   const toggleSelection = (id: string) => {
@@ -80,6 +81,62 @@ export default function LexisAutomatorUI() {
     }
   };
 
+  const handleGenerateAllMissing = async () => {
+    if (!wordData) return;
+
+    // Find selected definitions that are missing examples
+    const missing: Array<{ defId: string; mIdx: number; dIdx: number; definition: string }> = [];
+    for (const defId of selectedDefs) {
+      const parts = defId.split('-');
+      const mIdx = parseInt(parts[parts.length - 2]);
+      const dIdx = parseInt(parts[parts.length - 1]);
+      const meaning = wordData.meanings[mIdx];
+      const def = meaning?.definitions[dIdx];
+      if (def && !def.example) {
+        missing.push({ defId, mIdx, dIdx, definition: def.definition });
+      }
+    }
+
+    if (missing.length === 0) {
+      toast.info("All selected definitions already have examples!");
+      return;
+    }
+
+    setIsGeneratingAll(true);
+    let successCount = 0;
+
+    for (const item of missing) {
+      setGeneratingExamples(prev => ({ ...prev, [item.defId]: true }));
+      try {
+        const res = await LexisApi.generateExample(wordData.word, item.definition);
+        setWordData(prev => {
+          if (!prev) return prev;
+          const newData = JSON.parse(JSON.stringify(prev)) as DictionaryEntry;
+          newData.meanings[item.mIdx].definitions[item.dIdx].example = res.example;
+          return newData;
+        });
+        successCount++;
+      } catch (error: any) {
+        toast.error(`Failed to generate example for: "${item.definition.slice(0, 40)}..."`);
+      } finally {
+        setGeneratingExamples(prev => ({ ...prev, [item.defId]: false }));
+      }
+    }
+
+    setIsGeneratingAll(false);
+    if (successCount > 0) {
+      toast.success(`Generated ${successCount} example${successCount > 1 ? 's' : ''} successfully!`);
+    }
+  };
+
+  // Count selected definitions missing examples
+  const missingExamplesCount = wordData ? selectedDefs.filter(defId => {
+    const parts = defId.split('-');
+    const mIdx = parseInt(parts[parts.length - 2]);
+    const dIdx = parseInt(parts[parts.length - 1]);
+    const def = wordData.meanings[mIdx]?.definitions[dIdx];
+    return def && !def.example;
+  }).length : 0;
 
 
   const handleDownload = async () => {
@@ -415,17 +472,34 @@ export default function LexisAutomatorUI() {
                 </label>
               </div>
 
-              <Button 
-                onClick={handleDownload} 
-                disabled={isExporting}
-                className="w-full md:w-auto h-10 px-8 bg-indigo-600 hover:bg-indigo-700 shadow-md"
-              >
-                {isExporting ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
-                ) : (
-                  <><Download className="mr-2 h-4 w-4" /> Download Anki Deck</>
+              <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                {missingExamplesCount > 0 && (
+                  <Button
+                    onClick={handleGenerateAllMissing}
+                    disabled={isGeneratingAll || isExporting}
+                    variant="outline"
+                    className="flex-1 md:flex-none h-10 px-4 border-amber-300 text-amber-700 hover:bg-amber-50"
+                  >
+                    {isGeneratingAll ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating {missingExamplesCount}...</>
+                    ) : (
+                      <><Sparkles className="mr-2 h-4 w-4" /> Generate {missingExamplesCount} Missing Example{missingExamplesCount > 1 ? 's' : ''}</>
+                    )}
+                  </Button>
                 )}
-              </Button>
+
+                <Button 
+                  onClick={handleDownload} 
+                  disabled={isExporting || isGeneratingAll}
+                  className="flex-1 md:flex-none h-10 px-8 bg-indigo-600 hover:bg-indigo-700 shadow-md"
+                >
+                  {isExporting ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
+                  ) : (
+                    <><Download className="mr-2 h-4 w-4" /> Download Anki Deck</>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
