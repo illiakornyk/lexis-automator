@@ -149,17 +149,12 @@ export function useLexisAutomator() {
       const def = meaning?.definitions[dIdx];
       if (!def) continue;
 
-      if (!def.example) {
-        toast.error(`Please generate an example for: "${def.definition.slice(0, 50)}..."`);
-        return;
-      }
-
       cards.push({
         word: wordData.word,
         partOfSpeech: meaning.partOfSpeech,
         phonetic: wordData.phonetics?.find((p) => p.text)?.text || "",
         definition: def.definition,
-        example: def.example,
+        example: def.example || "",
       });
     }
 

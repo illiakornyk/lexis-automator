@@ -38,19 +38,27 @@ export class ExportService {
       // 2. Generate Audio for each card
       for (let i = 0; i < exportDto.cards.length; i++) {
         const card = exportDto.cards[i];
-        
-        const audioBase64 = await this.ttsService.generateAudio(
-          card.example, 
-          exportDto.ttsSettings.accent, 
-          exportDto.ttsSettings.gender
-        );
 
-        const filename = `${card.word}_${i}.webm`.replace(/[^a-z0-9_.]/gi, '_');
-        const filepath = path.join(tempDir, filename);
-        
-        // Write base64 to binary file
-        const audioBuffer = Buffer.from(audioBase64, 'base64');
-        await fs.writeFile(filepath, audioBuffer);
+        // Use the example for TTS; fall back to the word itself if example is empty
+        const ttsText = card.example?.trim() || card.word;
+        let filepath: string | null = null;
+
+        try {
+          const audioBase64 = await this.ttsService.generateAudio(
+            ttsText,
+            exportDto.ttsSettings.accent,
+            exportDto.ttsSettings.gender,
+          );
+
+          const filename = `${card.word}_${i}.webm`.replace(/[^a-z0-9_.]/gi, '_');
+          filepath = path.join(tempDir, filename);
+
+          const audioBuffer = Buffer.from(audioBase64, 'base64');
+          await fs.writeFile(filepath, audioBuffer);
+        } catch (err) {
+          this.logger.warn(`TTS failed for card "${card.word}", skipping audio.`);
+          filepath = null;
+        }
 
         // Add to payload
         pythonPayload.cards.push({
@@ -58,7 +66,7 @@ export class ExportService {
           partOfSpeech: card.partOfSpeech,
           phonetic: card.phonetic,
           definition: card.definition,
-          example: card.example,
+          example: card.example || '',
           audio_path: filepath,
         });
       }
