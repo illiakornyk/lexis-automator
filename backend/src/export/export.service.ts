@@ -28,10 +28,7 @@ export class ExportService {
       const pythonPayload: any = {
         deck_name: exportDto.deckName,
         deck_uuid: uuid,
-        include_recognition: exportDto.includeRecognition ?? true,
-        include_production: exportDto.includeProduction ?? false,
-        include_cloze: exportDto.includeCloze ?? false,
-        include_type_in: exportDto.includeTypeIn ?? false,
+        templates: exportDto.templates,
         cards: [],
       };
 

@@ -27,6 +27,20 @@ export class TtsSettingsDto {
   gender: Gender;
 }
 
+export class CustomTemplateDto {
+  @IsString()
+  name: string;
+
+  @IsBoolean()
+  is_cloze: boolean;
+
+  @IsString()
+  qfmt: string;
+
+  @IsString()
+  afmt: string;
+}
+
 export class ExportAnkiDto {
   @IsString()
   deckName: string;
@@ -40,19 +54,8 @@ export class ExportAnkiDto {
   @Type(() => TtsSettingsDto)
   ttsSettings: TtsSettingsDto;
 
-  @IsBoolean()
-  @IsOptional()
-  includeRecognition?: boolean;
-
-  @IsBoolean()
-  @IsOptional()
-  includeProduction?: boolean;
-
-  @IsBoolean()
-  @IsOptional()
-  includeCloze?: boolean;
-
-  @IsBoolean()
-  @IsOptional()
-  includeTypeIn?: boolean;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CustomTemplateDto)
+  templates: CustomTemplateDto[];
 }
