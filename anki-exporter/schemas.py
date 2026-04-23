@@ -9,11 +9,14 @@ class CardData(BaseModel):
     example: str
     audio_path: Optional[str] = None
 
+class CustomTemplateSchema(BaseModel):
+    name: str
+    is_cloze: bool
+    qfmt: str
+    afmt: str
+
 class DeckRequest(BaseModel):
     deck_name: str
     deck_uuid: str
     cards: List[CardData]
-    include_recognition: bool = True
-    include_production: bool = False
-    include_cloze: bool = False
-    include_type_in: bool = False
+    templates: List[CustomTemplateSchema]
