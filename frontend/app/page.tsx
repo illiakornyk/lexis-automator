@@ -25,14 +25,10 @@ export default function LexisAutomatorUI() {
     setAccent,
     gender,
     setGender,
-    includeRecognition,
-    setIncludeRecognition,
-    includeProduction,
-    setIncludeProduction,
-    includeCloze,
-    setIncludeCloze,
-    includeTypeIn,
-    setIncludeTypeIn,
+    templates,
+    isLoaded,
+    selectedTemplateIds,
+    setSelectedTemplateIds,
     isExporting,
     isGeneratingAll,
     missingExamplesCount,
@@ -120,14 +116,14 @@ export default function LexisAutomatorUI() {
         gender={gender}
         onAccentChange={setAccent}
         onGenderChange={setGender}
-        includeRecognition={includeRecognition}
-        includeProduction={includeProduction}
-        includeCloze={includeCloze}
-        includeTypeIn={includeTypeIn}
-        onRecognitionChange={setIncludeRecognition}
-        onProductionChange={setIncludeProduction}
-        onClozeChange={setIncludeCloze}
-        onTypeInChange={setIncludeTypeIn}
+        templates={templates}
+        isLoaded={isLoaded}
+        selectedTemplateIds={selectedTemplateIds}
+        onTemplateToggle={(id) => {
+          setSelectedTemplateIds((prev) =>
+            prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
+          );
+        }}
         isExporting={isExporting}
         isGeneratingAll={isGeneratingAll}
         onDownload={handleDownload}

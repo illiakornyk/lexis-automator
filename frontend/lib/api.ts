@@ -69,10 +69,12 @@ export const LexisApi = {
       example: string;
     }>;
     ttsSettings: { accent: string; gender: string };
-    includeRecognition: boolean;
-    includeProduction: boolean;
-    includeCloze: boolean;
-    includeTypeIn: boolean;
+    templates: Array<{
+      name: string;
+      is_cloze: boolean;
+      qfmt: string;
+      afmt: string;
+    }>;
   }): Promise<Blob> {
     const response = await fetch(`${API_BASE_URL}/export/anki`, {
       method: 'POST',

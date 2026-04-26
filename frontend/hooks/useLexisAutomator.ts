@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { LexisApi } from "@/lib/api";
 import { DictionaryEntry } from "@/lib/types";
 import { parseDefId } from "@/lib/utils/dictionary";
+import { useTemplates } from "./useTemplates";
+import { compileToAnkiHtml } from "@/lib/utils/ankiCompiler";
 
 export function useLexisAutomator() {
   // --- Core state ---
@@ -19,10 +21,15 @@ export function useLexisAutomator() {
   const [gender, setGender] = useState("FEMALE");
 
   // --- Card type toggles ---
-  const [includeRecognition, setIncludeRecognition] = useState(true);
-  const [includeProduction, setIncludeProduction] = useState(false);
-  const [includeCloze, setIncludeCloze] = useState(false);
-  const [includeTypeIn, setIncludeTypeIn] = useState(false);
+  const { templates, isLoaded } = useTemplates();
+  const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>(['default-recognition']);
+
+  // Handle default selection when templates load
+  useEffect(() => {
+    if (isLoaded && selectedTemplateIds.length === 0 && templates.length > 0) {
+      setSelectedTemplateIds([templates[0].id]);
+    }
+  }, [isLoaded, templates, selectedTemplateIds]);
 
   // --- Async action state ---
   const [isExporting, setIsExporting] = useState(false);
@@ -130,10 +137,13 @@ export function useLexisAutomator() {
   const handleDownload = async () => {
     if (!wordData) return;
 
-    if (!includeRecognition && !includeProduction && !includeCloze && !includeTypeIn) {
-      toast.error("Please select at least one card type.");
+    if (selectedTemplateIds.length === 0) {
+      toast.error("Please select at least one card template.");
       return;
     }
+
+    const activeTemplates = templates.filter((t) => selectedTemplateIds.includes(t.id));
+    const compiledTemplates = activeTemplates.map(compileToAnkiHtml);
 
     const cards: Array<{
       word: string;
@@ -164,10 +174,7 @@ export function useLexisAutomator() {
         deckName: `Lexis - ${wordData.word}`,
         cards,
         ttsSettings: { accent, gender },
-        includeRecognition,
-        includeProduction,
-        includeCloze,
-        includeTypeIn,
+        templates: compiledTemplates,
       });
 
       const url = URL.createObjectURL(blob);
@@ -209,14 +216,10 @@ export function useLexisAutomator() {
     setAccent,
     gender,
     setGender,
-    includeRecognition,
-    setIncludeRecognition,
-    includeProduction,
-    setIncludeProduction,
-    includeCloze,
-    setIncludeCloze,
-    includeTypeIn,
-    setIncludeTypeIn,
+    templates,
+    isLoaded,
+    selectedTemplateIds,
+    setSelectedTemplateIds,
     isExporting,
     isGeneratingAll,
     missingExamplesCount,

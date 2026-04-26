@@ -5,6 +5,7 @@ import { Download, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CustomTemplate } from "@/hooks/useTemplates";
 
 interface ExportBarProps {
   selectedCount: number;
@@ -16,15 +17,11 @@ interface ExportBarProps {
   onAccentChange: (value: string) => void;
   onGenderChange: (value: string) => void;
 
-  // Card type toggles
-  includeRecognition: boolean;
-  includeProduction: boolean;
-  includeCloze: boolean;
-  includeTypeIn: boolean;
-  onRecognitionChange: (value: boolean) => void;
-  onProductionChange: (value: boolean) => void;
-  onClozeChange: (value: boolean) => void;
-  onTypeInChange: (value: boolean) => void;
+  // Templates
+  templates: CustomTemplate[];
+  isLoaded: boolean;
+  selectedTemplateIds: string[];
+  onTemplateToggle: (id: string) => void;
 
   // Actions
   isExporting: boolean;
@@ -40,14 +37,10 @@ export function ExportBar({
   gender,
   onAccentChange,
   onGenderChange,
-  includeRecognition,
-  includeProduction,
-  includeCloze,
-  includeTypeIn,
-  onRecognitionChange,
-  onProductionChange,
-  onClozeChange,
-  onTypeInChange,
+  templates,
+  isLoaded,
+  selectedTemplateIds,
+  onTemplateToggle,
   isExporting,
   isGeneratingAll,
   onDownload,
@@ -88,23 +81,20 @@ export function ExportBar({
         {/* Bottom row: Card type toggles + Action buttons */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-4 text-sm">
-            <span className="text-slate-500 font-medium">Card Types:</span>
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <Checkbox checked={includeRecognition} onCheckedChange={(v) => onRecognitionChange(!!v)} />
-              <span className="text-slate-700">Recognition</span>
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <Checkbox checked={includeProduction} onCheckedChange={(v) => onProductionChange(!!v)} />
-              <span className="text-slate-700">Production</span>
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <Checkbox checked={includeCloze} onCheckedChange={(v) => onClozeChange(!!v)} />
-              <span className="text-slate-700">Cloze</span>
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <Checkbox checked={includeTypeIn} onCheckedChange={(v) => onTypeInChange(!!v)} />
-              <span className="text-slate-700">Type-In</span>
-            </label>
+            <span className="text-slate-500 font-medium">Templates:</span>
+            {isLoaded ? (
+              templates.map((t) => (
+                <label key={t.id} className="flex items-center gap-1.5 cursor-pointer">
+                  <Checkbox 
+                    checked={selectedTemplateIds.includes(t.id)} 
+                    onCheckedChange={() => onTemplateToggle(t.id)} 
+                  />
+                  <span className="text-slate-700">{t.name}</span>
+                </label>
+              ))
+            ) : (
+              <span className="text-slate-400 text-sm">Loading templates...</span>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2 w-full md:w-auto">

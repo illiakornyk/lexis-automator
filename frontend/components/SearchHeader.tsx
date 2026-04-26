@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { Search, CheckCircle2 } from "lucide-react";
+import Link from "next/link";
+import { Search, CheckCircle2, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -17,10 +18,17 @@ export function SearchHeader({ searchQuery, onSearchQueryChange, onSearch, isLoa
     <header className="bg-white border-b py-6 px-4 md:px-8 mb-8 sticky top-0 z-10 shadow-sm">
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="flex items-center gap-2">
-          <div className="bg-indigo-600 rounded-md p-2 flex items-center justify-center">
-            <CheckCircle2 color="white" size={24} />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-indigo-900">Lexis Automator</h1>
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <div className="bg-indigo-600 rounded-md p-2 flex items-center justify-center">
+              <CheckCircle2 color="white" size={24} />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-indigo-900 hidden sm:block">Lexis Automator</h1>
+          </Link>
+          <Link href="/templates" className="ml-2">
+            <Button variant="ghost" size="icon" className="text-slate-500 hover:bg-indigo-50 hover:text-indigo-600">
+              <Settings size={20} />
+            </Button>
+          </Link>
         </div>
 
         <form onSubmit={onSearch} className="flex relative w-full md:w-96">
