@@ -1,13 +1,15 @@
-import { Controller, Post, Body, Res, StreamableFile } from '@nestjs/common';
+import { Controller, Post, Body, Res, StreamableFile, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { ExportService } from './export.service';
 import { ExportAnkiDto } from './dto/export-anki.dto';
+import { SupabaseAuthGuard } from '../guards/supabase-auth.guard';
 
 @Controller('export')
 export class ExportController {
   constructor(private readonly exportService: ExportService) {}
 
   @Post('anki')
+  @UseGuards(SupabaseAuthGuard)
   async exportAnki(
     @Body() exportDto: ExportAnkiDto,
     @Res({ passthrough: true }) res: Response,
