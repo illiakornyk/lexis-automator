@@ -1,4 +1,5 @@
 import { DictionaryEntry } from './types';
+import { createClient } from './supabase';
 
 // In Next.js, env variables prefixed with NEXT_PUBLIC_ are available in the browser.
 // Fallback to localhost:3000 if not set in .env.local
@@ -76,9 +77,21 @@ export const LexisApi = {
       afmt: string;
     }>;
   }): Promise<Blob> {
+    const supabase = createClient();
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE_URL}/export/anki`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
