@@ -54,4 +54,37 @@ export const LexisApi = {
     });
     return handleResponse<{ audioBase64: string }>(response);
   },
+
+  /**
+   * Exports selected definitions as an Anki .apkg deck via the backend.
+   * Returns a Blob of the binary .apkg file.
+   */
+  async exportAnki(payload: {
+    deckName: string;
+    cards: Array<{
+      word: string;
+      partOfSpeech: string;
+      phonetic: string;
+      definition: string;
+      example: string;
+    }>;
+    ttsSettings: { accent: string; gender: string };
+    templates: Array<{
+      name: string;
+      is_cloze: boolean;
+      qfmt: string;
+      afmt: string;
+    }>;
+  }): Promise<Blob> {
+    const response = await fetch(`${API_BASE_URL}/export/anki`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(response.status, errorData.message || 'Failed to generate Anki deck.');
+    }
+    return response.blob();
+  },
 };
