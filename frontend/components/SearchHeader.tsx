@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, CheckCircle2, Settings } from "lucide-react";
+import { Search, CheckCircle2, LayoutTemplate, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/AuthProvider";
@@ -44,7 +44,7 @@ export function SearchHeader({ searchQuery, onSearchQueryChange, onSearch, isLoa
           </Link>
           <Link href="/templates" className="ml-2">
             <Button variant="ghost" size="icon" className="text-slate-500 hover:bg-indigo-50 hover:text-indigo-600">
-              <Settings size={20} />
+              <LayoutTemplate size={20} />
             </Button>
           </Link>
         </div>
@@ -70,6 +70,11 @@ export function SearchHeader({ searchQuery, onSearchQueryChange, onSearch, isLoa
               <span className="text-sm font-medium text-slate-600 hidden sm:block">
                 {user.email}
               </span>
+              <Link href="/settings">
+                <Button variant="ghost" size="icon" className="text-slate-500 hover:text-indigo-600">
+                  <User size={20} />
+                </Button>
+              </Link>
               <Button 
                 variant="outline" 
                 size="sm" 

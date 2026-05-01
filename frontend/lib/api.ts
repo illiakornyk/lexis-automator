@@ -35,11 +35,11 @@ export const LexisApi = {
   /**
    * Generates an example sentence using the LLM via the backend.
    */
-  async generateExample(word: string, definition: string): Promise<{ example: string }> {
+  async generateExample(word: string, definition: string, apiKey?: string | null): Promise<{ example: string }> {
     const response = await fetch(`${API_BASE_URL}/dictionary/example`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ word, definition }),
+      body: JSON.stringify({ word, definition, apiKey }),
     });
     return handleResponse<{ example: string }>(response);
   },
