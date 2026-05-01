@@ -27,10 +27,20 @@ export class AiService {
       'openai/gpt-4o-mini';
   }
 
-  async generateExample(word: string, definition: string): Promise<string> {
+  async generateExample(word: string, definition: string, apiKey?: string): Promise<string> {
     try {
-      const response = await this.openai.chat.completions.create({
-        model: this.model,
+      let client = this.openai;
+      let targetModel = this.model;
+
+      if (apiKey) {
+        // Use OpenAI directly if an sk- key is provided
+        client = new OpenAI({ apiKey });
+        // Optionally override the model for raw OpenAI keys if the default is an OpenRouter format
+        targetModel = 'gpt-4o-mini';
+      }
+
+      const response = await client.chat.completions.create({
+        model: targetModel,
         messages: [
           {
             role: 'system',

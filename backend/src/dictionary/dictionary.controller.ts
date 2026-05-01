@@ -52,6 +52,7 @@ export class DictionaryController {
     const sentence = await this.aiService.generateExample(
       dto.word,
       dto.definition,
+      dto.apiKey,
     );
     return { example: sentence };
   }

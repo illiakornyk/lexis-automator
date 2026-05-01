@@ -13,4 +13,11 @@ export class GenerateExampleDto {
       'The exact definition or sense of the word to contextualize the example',
   })
   definition: string;
+
+  @ApiProperty({
+    example: 'sk-...',
+    description: 'Optional OpenAI API key to use instead of the server default',
+    required: false,
+  })
+  apiKey?: string;
 }
