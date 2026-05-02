@@ -15,8 +15,7 @@ import {
   DragEndEvent,
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { ArrowLeft, Save, Plus, Trash2, GripVertical } from "lucide-react";
-import Link from "next/link";
+import { Save, Plus, Trash2, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 
 import { useTemplates, CustomTemplate, FieldType } from "@/hooks/useTemplates";
@@ -230,18 +229,11 @@ export default function TemplatesPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <ArrowLeft size={20} className="text-slate-500" />
-              </Button>
-            </Link>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text">
-              Template Builder
-            </h1>
-          </div>
+      <header className="bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text">
+            Template Builder
+          </h1>
           <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white rounded-full">
             <Save size={18} className="mr-2" /> Save Template
           </Button>

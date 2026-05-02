@@ -4,8 +4,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { Save, Loader2 } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -55,10 +54,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-neutral-900 text-neutral-100 p-8">
       <div className="max-w-2xl mx-auto">
-        <div className="flex items-center space-x-4 mb-8">
-          <Link href="/" className="p-2 hover:bg-neutral-800 rounded-full transition-colors">
-            <ArrowLeft className="w-6 h-6 text-neutral-400 hover:text-neutral-200" />
-          </Link>
+        <div className="mb-8">
           <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">
             Account Settings
           </h1>
