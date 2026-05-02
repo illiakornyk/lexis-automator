@@ -4,6 +4,7 @@ import { DictionaryModule } from './dictionary/dictionary.module';
 import { AiModule } from './ai/ai.module';
 import { TtsModule } from './tts/tts.module';
 import { ExportModule } from './export/export.module';
+import { ImagesModule } from './images/images.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { ExportModule } from './export/export.module';
     AiModule,
     TtsModule,
     ExportModule,
+    ImagesModule,
   ],
   controllers: [],
   providers: [],

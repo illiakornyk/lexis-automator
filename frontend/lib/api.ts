@@ -129,4 +129,49 @@ export const LexisApi = {
     }
     return response.blob();
   },
+
+  async searchImages(q: string, page = 1): Promise<Array<{ id: string; previewUrl: string; webformatUrl: string }>> {
+    const params = new URLSearchParams({ q, page: String(page) });
+    const response = await fetch(`${API_BASE_URL}/images/search?${params}`, {
+      headers: { ...(await getAuthHeaders()) },
+    });
+    return handleResponse(response);
+  },
+
+  async saveImageFromUrl(cardId: string, url: string): Promise<{ imagePath: string }> {
+    const response = await fetch(`${API_BASE_URL}/images/save-from-url`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
+      body: JSON.stringify({ cardId, url }),
+    });
+    return handleResponse(response);
+  },
+
+  async uploadImage(cardId: string, file: File): Promise<{ imagePath: string }> {
+    const form = new FormData();
+    form.append('file', file);
+    const response = await fetch(`${API_BASE_URL}/images/upload/${encodeURIComponent(cardId)}`, {
+      method: 'POST',
+      headers: { ...(await getAuthHeaders()) },
+      body: form,
+    });
+    return handleResponse(response);
+  },
+
+  async removeImage(cardId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/images/${encodeURIComponent(cardId)}`, {
+      method: 'DELETE',
+      headers: { ...(await getAuthHeaders()) },
+    });
+    await handleResponse(response);
+  },
+
+  async getImageSignedUrl(storagePath: string): Promise<string> {
+    const params = new URLSearchParams({ path: storagePath });
+    const response = await fetch(`${API_BASE_URL}/images/signed-url?${params}`, {
+      headers: { ...(await getAuthHeaders()) },
+    });
+    const data = await handleResponse<{ url: string }>(response);
+    return data.url;
+  },
 };

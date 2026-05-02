@@ -6,6 +6,7 @@ import { ExportDeckDto } from './dto/export-deck.dto';
 import { ExportDecksArchiveDto } from './dto/export-decks-archive.dto';
 import { CompiledTemplate, resolveAndCompileTemplates } from './utils/anki-compiler';
 import { TtsService } from '../tts/tts.service';
+import { ImagesService } from '../images/images.service';
 import { Accent, Gender } from '../tts/dto/generate-tts.dto';
 import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
@@ -23,6 +24,7 @@ export class ExportService {
   constructor(
     private readonly httpService: HttpService,
     private readonly ttsService: TtsService,
+    private readonly imagesService: ImagesService,
   ) {
     this.supabase = createClient(
       process.env.SUPABASE_URL!,
@@ -32,7 +34,7 @@ export class ExportService {
 
   private async buildApkgFile(
     deckName: string,
-    cards: CardDataDto[],
+    cards: (CardDataDto & { imagePath?: string | null })[],
     ttsSettings: TtsSettingsDto,
     templates: CompiledTemplate[],
     tempDir: string,
@@ -47,7 +49,8 @@ export class ExportService {
     for (let i = 0; i < cards.length; i++) {
       const card = cards[i];
       const ttsText = card.example?.trim() || card.word;
-      let filepath: string | null = null;
+      let audioPath: string | null = null;
+      let imagePath: string | null = null;
 
       try {
         const audioBase64 = await this.ttsService.generateAudio(
@@ -56,10 +59,18 @@ export class ExportService {
           ttsSettings.gender as Gender,
         );
         const filename = `${card.word}_${i}.webm`.replace(/[^a-z0-9_.]/gi, '_');
-        filepath = path.join(tempDir, filename);
-        await fs.writeFile(filepath, Buffer.from(audioBase64, 'base64'));
+        audioPath = path.join(tempDir, filename);
+        await fs.writeFile(audioPath, Buffer.from(audioBase64, 'base64'));
       } catch {
         this.logger.warn(`TTS failed for card "${card.word}", skipping audio.`);
+      }
+
+      if (card.imagePath) {
+        try {
+          imagePath = await this.imagesService.downloadToFile(card.imagePath, tempDir);
+        } catch {
+          this.logger.warn(`Image download failed for card "${card.word}", skipping image.`);
+        }
       }
 
       pythonPayload.cards.push({
@@ -68,7 +79,8 @@ export class ExportService {
         phonetic: card.phonetic,
         definition: card.definition,
         example: card.example || '',
-        audio_path: filepath,
+        audio_path: audioPath,
+        image_path: imagePath,
       });
     }
 
@@ -122,12 +134,13 @@ export class ExportService {
     if (!rawCards || rawCards.length === 0)
       throw new BadRequestException('Deck has no cards');
 
-    const cards: CardDataDto[] = rawCards.map((c) => ({
+    const cards = rawCards.map((c) => ({
       word: c.word,
       partOfSpeech: c.part_of_speech,
       phonetic: c.phonetic || '',
       definition: c.definition,
       example: c.example || '',
+      imagePath: c.image_path ?? null,
     }));
 
     const templates = await resolveAndCompileTemplates(dto.templateIds, this.supabase);
@@ -180,12 +193,13 @@ export class ExportService {
           .order('created_at', { ascending: true });
         if (!rawCards || rawCards.length === 0) continue;
 
-        const cards: CardDataDto[] = rawCards.map((c) => ({
+        const cards = rawCards.map((c) => ({
           word: c.word,
           partOfSpeech: c.part_of_speech,
           phonetic: c.phonetic || '',
           definition: c.definition,
           example: c.example || '',
+          imagePath: c.image_path ?? null,
         }));
 
         const tempDir = path.join(process.cwd(), 'temp', `export-${uuidv4()}`);

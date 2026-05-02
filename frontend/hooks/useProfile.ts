@@ -70,10 +70,10 @@ export function useProfile() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .upsert({ 
-          id: user.id, 
-          ...profile, 
+        .upsert({
+          ...profile,
           ...updates,
+          id: user.id,
           updated_at: new Date().toISOString()
         });
 

@@ -7,14 +7,15 @@ from schemas import DeckRequest
 CARD_CSS = '.card { font-family: arial; font-size: 20px; text-align: center; color: black; background-color: white; }'
 CLOZE_CSS = CARD_CSS + ' .cloze { font-weight: bold; color: blue; }'
 
-# Maps Anki field names to how to extract their value from a CardData + audio string
+# Maps Anki field names to how to extract their value from a CardData + extra dict
 FIELD_VALUE_MAP = {
-    'Word':         lambda card, audio: card.word,
-    'PartOfSpeech': lambda card, audio: card.partOfSpeech,
-    'Phonetic':     lambda card, audio: card.phonetic,
-    'Definition':   lambda card, audio: card.definition,
-    'Example':      lambda card, audio: card.example,
-    'Audio':        lambda card, audio: audio,
+    'Word':         lambda card, extra: card.word,
+    'PartOfSpeech': lambda card, extra: card.partOfSpeech,
+    'Phonetic':     lambda card, extra: card.phonetic,
+    'Definition':   lambda card, extra: card.definition,
+    'Example':      lambda card, extra: card.example,
+    'Audio':        lambda card, extra: extra.get('audio', ''),
+    'Image':        lambda card, extra: extra.get('image', ''),
 }
 
 def generate_model_id():
@@ -100,6 +101,15 @@ def create_anki_package(req: DeckRequest) -> str:
             filename = os.path.basename(card.audio_path)
             audio_field = f"[sound:{filename}]"
 
+        # Prepare image field
+        image_field = ""
+        if card.image_path and os.path.exists(card.image_path):
+            media_files.append(card.image_path)
+            img_filename = os.path.basename(card.image_path)
+            image_field = f'<img src="{img_filename}" style="max-width:300px; max-height:200px;">'
+
+        extra = {'audio': audio_field, 'image': image_field}
+
         for template_meta, model, field_names in models:
             if template_meta.is_cloze:
                 if card.word.lower() in card.example.lower():
@@ -116,7 +126,7 @@ def create_anki_package(req: DeckRequest) -> str:
                     )
                     deck.add_note(note)
             else:
-                field_values = [FIELD_VALUE_MAP[f](card, audio_field) for f in field_names]
+                field_values = [FIELD_VALUE_MAP[f](card, extra) for f in field_names]
                 note = genanki.Note(model=model, fields=field_values)
                 deck.add_note(note)
 

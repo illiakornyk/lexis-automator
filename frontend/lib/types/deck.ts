@@ -13,5 +13,6 @@ export interface SavedCard {
   phonetic: string | null;
   definition: string;
   example: string | null;
+  imagePath: string | null;
   createdAt: string;
 }

@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 
-type FieldType = 'Word' | 'PartOfSpeech' | 'Phonetic' | 'Definition' | 'Example' | 'Audio' | 'TypeIn' | 'Cloze';
+type FieldType = 'Word' | 'PartOfSpeech' | 'Phonetic' | 'Definition' | 'Example' | 'Audio' | 'Image' | 'TypeIn' | 'Cloze';
 
 const FIELD_SNIPPETS: Record<FieldType, string> = {
   Word: '<div style="text-align:center; font-size: 24px; font-weight: bold;">{{Word}}</div>',
@@ -9,6 +9,7 @@ const FIELD_SNIPPETS: Record<FieldType, string> = {
   Definition: '<div style="text-align:left; font-size: 18px; margin-top: 12px; margin-bottom: 12px;"><b>Definition:</b> {{Definition}}</div>',
   Example: '<div style="text-align:left; font-style: italic; color: #555; margin-top: 12px; margin-bottom: 12px;">"{{Example}}"</div>',
   Audio: '<div style="margin-top: 16px;">{{Audio}}</div>',
+  Image: '<div style="margin-top: 12px; text-align: center;">{{#Image}}{{Image}}{{/Image}}</div>',
   TypeIn: '<div style="margin-top: 16px;">{{type:Word}}</div>',
   Cloze: '{{cloze:Text}}',
 };

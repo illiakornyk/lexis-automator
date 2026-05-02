@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Download,
+  ImageIcon,
   Loader2,
   Pencil,
   Trash2,
@@ -21,6 +22,7 @@ import { useDecks } from "@/hooks/useDecks";
 import { useDeckCards } from "@/hooks/useDeckCards";
 import { useTemplates } from "@/hooks/useTemplates";
 import { useAuth } from "@/components/AuthProvider";
+import { CardImagePicker } from "@/components/CardImagePicker";
 import { LexisApi } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -33,7 +35,7 @@ export default function DeckDetailPage({
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const { decks, isLoading: decksLoading, renameDeck, deleteDeck } = useDecks();
-  const { cards, isLoading: cardsLoading, removeCard } = useDeckCards(deckId);
+  const { cards, isLoading: cardsLoading, removeCard, updateCardImage } = useDeckCards(deckId);
   const { templates, isLoaded: templatesLoaded } = useTemplates();
 
   const [isRenaming, setIsRenaming] = useState(false);
@@ -42,6 +44,8 @@ export default function DeckDetailPage({
   const [accent, setAccent] = useState("US");
   const [gender, setGender] = useState("FEMALE");
   const [isExporting, setIsExporting] = useState(false);
+  const [pickerCardId, setPickerCardId] = useState<string | null>(null);
+  const [imageSignedUrls, setImageSignedUrls] = useState<Record<string, string>>({});
 
   if (authLoading || decksLoading) return null;
   if (!user) {
@@ -57,6 +61,25 @@ export default function DeckDetailPage({
       </div>
     );
   }
+
+  const openPicker = async (cardId: string, imagePath: string | null) => {
+    if (imagePath && !imageSignedUrls[cardId]) {
+      try {
+        const url = await LexisApi.getImageSignedUrl(imagePath);
+        setImageSignedUrls((prev) => ({ ...prev, [cardId]: url }));
+      } catch {
+        // preview unavailable — picker still opens
+      }
+    }
+    setPickerCardId(cardId);
+  };
+
+  const handleImageSaved = (cardId: string, imagePath: string | null) => {
+    updateCardImage(cardId, imagePath);
+    if (!imagePath) {
+      setImageSignedUrls((prev) => { const next = { ...prev }; delete next[cardId]; return next; });
+    }
+  };
 
   const toggleTemplate = (id: string) => {
     setSelectedTemplateIds((prev) =>
@@ -225,6 +248,9 @@ export default function DeckDetailPage({
                   <th className="text-left px-4 py-3 font-medium text-slate-600 hidden md:table-cell">
                     Example
                   </th>
+                  <th className="text-left px-4 py-3 font-medium text-slate-600 hidden lg:table-cell">
+                    Image
+                  </th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
@@ -249,6 +275,26 @@ export default function DeckDetailPage({
                     <td className="px-4 py-3 text-slate-500 italic hidden md:table-cell max-w-xs">
                       <span className="line-clamp-2">{card.example || "—"}</span>
                     </td>
+                    <td className="px-4 py-3 hidden lg:table-cell">
+                      <button
+                        className="rounded-md overflow-hidden border border-slate-200 hover:border-indigo-400 transition-colors"
+                        onClick={() => openPicker(card.id, card.imagePath)}
+                        title={card.imagePath ? "Change image" : "Add image"}
+                      >
+                        {imageSignedUrls[card.id] ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={imageSignedUrls[card.id]}
+                            alt=""
+                            className="w-12 h-12 object-cover"
+                          />
+                        ) : (
+                          <div className={`w-12 h-12 flex items-center justify-center ${card.imagePath ? "bg-indigo-50" : "bg-slate-50"}`}>
+                            <ImageIcon className={`h-5 w-5 ${card.imagePath ? "text-indigo-400" : "text-slate-300"}`} />
+                          </div>
+                        )}
+                      </button>
+                    </td>
                     <td className="px-4 py-3">
                       <Button
                         variant="ghost"
@@ -266,6 +312,16 @@ export default function DeckDetailPage({
           </div>
         )}
       </div>
+
+      {pickerCardId && (
+        <CardImagePicker
+          open={!!pickerCardId}
+          onOpenChange={(open) => { if (!open) setPickerCardId(null); }}
+          cardId={pickerCardId}
+          currentImagePath={cards.find((c) => c.id === pickerCardId)?.imagePath ?? null}
+          onImageSaved={(imagePath) => handleImageSaved(pickerCardId, imagePath)}
+        />
+      )}
     </div>
   );
 }

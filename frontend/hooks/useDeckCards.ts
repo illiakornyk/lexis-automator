@@ -33,6 +33,7 @@ export function useDeckCards(deckId: string) {
           phonetic: c.phonetic,
           definition: c.definition,
           example: c.example,
+          imagePath: c.image_path ?? null,
           createdAt: c.created_at,
         })),
       );
@@ -59,5 +60,11 @@ export function useDeckCards(deckId: string) {
     }
   };
 
-  return { cards, isLoading, removeCard };
+  const updateCardImage = (cardId: string, imagePath: string | null) => {
+    setCards((prev) =>
+      prev.map((c) => (c.id === cardId ? { ...c, imagePath } : c)),
+    );
+  };
+
+  return { cards, isLoading, removeCard, updateCardImage };
 }
