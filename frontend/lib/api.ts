@@ -80,11 +80,11 @@ export const LexisApi = {
     const supabase = createClient();
     const { data } = await supabase.auth.getSession();
     const token = data?.session?.access_token;
-    
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -97,6 +97,52 @@ export const LexisApi = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new ApiError(response.status, errorData.message || 'Failed to generate Anki deck.');
+    }
+    return response.blob();
+  },
+
+  async exportDeck(payload: {
+    deckId: string;
+    templateIds: string[];
+    ttsSettings: { accent: string; gender: string };
+  }): Promise<Blob> {
+    const supabase = createClient();
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
+    const response = await fetch(`${API_BASE_URL}/export/deck`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(response.status, errorData.message || 'Failed to export deck.');
+    }
+    return response.blob();
+  },
+
+  async exportDecksArchive(payload: {
+    deckIds: string[];
+    templateIds: string[];
+    ttsSettings: { accent: string; gender: string };
+  }): Promise<Blob> {
+    const supabase = createClient();
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
+    const response = await fetch(`${API_BASE_URL}/export/decks/archive`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(response.status, errorData.message || 'Failed to export archive.');
     }
     return response.blob();
   },
