@@ -149,75 +149,85 @@ export class ExportService {
       return { fileStream, cleanup, deckName: deck.name };
     } catch (error) {
       await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      this.logger.error(`Failed to build APKG for deck "${dto.deckId}":`, error);
       throw error;
     }
   }
 
   async exportDecksArchive(dto: ExportDecksArchiveDto) {
-    const templates = await resolveAndCompileTemplates(dto.templateIds, this.supabase);
     const tempDirs: string[] = [];
-    const apkgEntries: Array<{ filePath: string; archiveName: string }> = [];
-
-    for (const deckId of dto.deckIds) {
-      const { data: deck } = await this.supabase
-        .from('decks')
-        .select('name')
-        .eq('id', deckId)
-        .single();
-      if (!deck) continue;
-
-      const { data: rawCards } = await this.supabase
-        .from('saved_cards')
-        .select('*')
-        .eq('deck_id', deckId)
-        .order('created_at', { ascending: true });
-      if (!rawCards || rawCards.length === 0) continue;
-
-      const cards: CardDataDto[] = rawCards.map((c) => ({
-        word: c.word,
-        partOfSpeech: c.part_of_speech,
-        phonetic: c.phonetic || '',
-        definition: c.definition,
-        example: c.example || '',
-      }));
-
-      const tempDir = path.join(process.cwd(), 'temp', `export-${uuidv4()}`);
-      await fs.mkdir(tempDir, { recursive: true });
-      tempDirs.push(tempDir);
-
-      const apkgPath = await this.buildApkgFile(
-        deck.name,
-        cards,
-        dto.ttsSettings,
-        templates,
-        tempDir,
-      );
-      apkgEntries.push({
-        filePath: apkgPath,
-        archiveName: `${deck.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.apkg`,
-      });
-    }
-
-    if (apkgEntries.length === 0)
-      throw new BadRequestException('No valid decks to export');
-
     const cleanup = () =>
       Promise.all(
         tempDirs.map((d) => fs.rm(d, { recursive: true, force: true }).catch(() => {})),
       );
 
-    const archive = archiver.create('zip', { zlib: { level: 6 } });
-    const passThrough = new PassThrough();
-    archive.pipe(passThrough);
+    try {
+      const templates = await resolveAndCompileTemplates(dto.templateIds, this.supabase);
+      const apkgEntries: Array<{ filePath: string; archiveName: string }> = [];
 
-    for (const entry of apkgEntries) {
-      archive.file(entry.filePath, { name: entry.archiveName });
+      for (const deckId of dto.deckIds) {
+        const { data: deck } = await this.supabase
+          .from('decks')
+          .select('name')
+          .eq('id', deckId)
+          .single();
+        if (!deck) continue;
+
+        const { data: rawCards } = await this.supabase
+          .from('saved_cards')
+          .select('*')
+          .eq('deck_id', deckId)
+          .order('created_at', { ascending: true });
+        if (!rawCards || rawCards.length === 0) continue;
+
+        const cards: CardDataDto[] = rawCards.map((c) => ({
+          word: c.word,
+          partOfSpeech: c.part_of_speech,
+          phonetic: c.phonetic || '',
+          definition: c.definition,
+          example: c.example || '',
+        }));
+
+        const tempDir = path.join(process.cwd(), 'temp', `export-${uuidv4()}`);
+        await fs.mkdir(tempDir, { recursive: true });
+        tempDirs.push(tempDir);
+
+        const apkgPath = await this.buildApkgFile(
+          deck.name,
+          cards,
+          dto.ttsSettings,
+          templates,
+          tempDir,
+        );
+        apkgEntries.push({
+          filePath: apkgPath,
+          archiveName: `${deck.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.apkg`,
+        });
+      }
+
+      if (apkgEntries.length === 0)
+        throw new BadRequestException('No valid decks to export');
+
+      const archive = archiver.create('zip', { zlib: { level: 6 } });
+      const passThrough = new PassThrough();
+      archive.pipe(passThrough);
+
+      for (const entry of apkgEntries) {
+        archive.file(entry.filePath, { name: entry.archiveName });
+      }
+
+      archive.on('end', () => { void cleanup(); });
+      archive.on('error', (err) => {
+        void cleanup();
+        passThrough.destroy(err);
+      });
+      archive.finalize();
+
+      return { stream: passThrough };
+    } catch (error) {
+      await cleanup();
+      this.logger.error('Failed to generate decks archive:', error);
+      throw error;
     }
-
-    archive.on('end', () => cleanup());
-    archive.on('error', () => cleanup());
-    archive.finalize();
-
-    return { stream: passThrough };
   }
 }
