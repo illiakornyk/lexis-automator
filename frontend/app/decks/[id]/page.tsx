@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -47,6 +47,19 @@ export default function DeckDetailPage({
   const [pickerCardId, setPickerCardId] = useState<string | null>(null);
   const [imageSignedUrls, setImageSignedUrls] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    const toFetch = cards.filter((c) => c.imagePath);
+    if (toFetch.length === 0) return;
+    toFetch.forEach(async (c) => {
+      try {
+        const url = await LexisApi.getImageSignedUrl(c.imagePath!);
+        setImageSignedUrls((prev) => prev[c.id] ? prev : { ...prev, [c.id]: url });
+      } catch {
+        // preview unavailable
+      }
+    });
+  }, [cards]);
+
   if (authLoading || decksLoading) return null;
   if (!user) {
     router.push("/login");
@@ -62,22 +75,19 @@ export default function DeckDetailPage({
     );
   }
 
-  const openPicker = async (cardId: string, imagePath: string | null) => {
-    if (imagePath && !imageSignedUrls[cardId]) {
+  const openPicker = (cardId: string) => setPickerCardId(cardId);
+
+  const handleImageSaved = async (cardId: string, imagePath: string | null) => {
+    updateCardImage(cardId, imagePath);
+    if (!imagePath) {
+      setImageSignedUrls((prev) => { const next = { ...prev }; delete next[cardId]; return next; });
+    } else {
       try {
         const url = await LexisApi.getImageSignedUrl(imagePath);
         setImageSignedUrls((prev) => ({ ...prev, [cardId]: url }));
       } catch {
-        // preview unavailable — picker still opens
+        // preview unavailable
       }
-    }
-    setPickerCardId(cardId);
-  };
-
-  const handleImageSaved = (cardId: string, imagePath: string | null) => {
-    updateCardImage(cardId, imagePath);
-    if (!imagePath) {
-      setImageSignedUrls((prev) => { const next = { ...prev }; delete next[cardId]; return next; });
     }
   };
 
@@ -278,7 +288,7 @@ export default function DeckDetailPage({
                     <td className="px-4 py-3 hidden lg:table-cell">
                       <button
                         className="rounded-md overflow-hidden border border-slate-200 hover:border-indigo-400 transition-colors"
-                        onClick={() => openPicker(card.id, card.imagePath)}
+                        onClick={() => openPicker(card.id)}
                         title={card.imagePath ? "Change image" : "Add image"}
                       >
                         {imageSignedUrls[card.id] ? (
