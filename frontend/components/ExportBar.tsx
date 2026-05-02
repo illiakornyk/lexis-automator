@@ -1,33 +1,36 @@
 "use client";
 
-import React from "react";
-import { Download, Loader2, Sparkles } from "lucide-react";
+import { Download, Loader2, Sparkles, BookmarkPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CustomTemplate } from "@/hooks/useTemplates";
+import { DeckCombobox } from "@/components/DeckCombobox";
+import { Deck } from "@/lib/types/deck";
 
 interface ExportBarProps {
   selectedCount: number;
   missingExamplesCount: number;
-
-  // TTS settings
   accent: string;
   gender: string;
   onAccentChange: (value: string) => void;
   onGenderChange: (value: string) => void;
-
-  // Templates
   templates: CustomTemplate[];
   isLoaded: boolean;
   selectedTemplateIds: string[];
   onTemplateToggle: (id: string) => void;
-
-  // Actions
   isExporting: boolean;
   isGeneratingAll: boolean;
   onDownload: () => void;
   onGenerateAllMissing: () => void;
+  // Deck props
+  decks: Deck[];
+  decksLoading: boolean;
+  selectedDeckId: string | null;
+  onSelectDeck: (id: string) => void;
+  onCreateDeck: (name: string) => Promise<void>;
+  isSaving: boolean;
+  onSaveToDeck: () => void;
 }
 
 export function ExportBar({
@@ -45,13 +48,19 @@ export function ExportBar({
   isGeneratingAll,
   onDownload,
   onGenerateAllMissing,
+  decks,
+  decksLoading,
+  selectedDeckId,
+  onSelectDeck,
+  onCreateDeck,
+  isSaving,
+  onSaveToDeck,
 }: ExportBarProps) {
   if (selectedCount === 0) return null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] z-50">
       <div className="max-w-4xl mx-auto flex flex-col gap-3">
-        {/* Top row: Selected count + TTS Settings */}
         <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-slate-600">
           <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-xs font-bold shrink-0">
             {selectedCount} Selected
@@ -78,16 +87,15 @@ export function ExportBar({
           </Select>
         </div>
 
-        {/* Bottom row: Card type toggles + Action buttons */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <span className="text-slate-500 font-medium">Templates:</span>
             {isLoaded ? (
               templates.map((t) => (
                 <label key={t.id} className="flex items-center gap-1.5 cursor-pointer">
-                  <Checkbox 
-                    checked={selectedTemplateIds.includes(t.id)} 
-                    onCheckedChange={() => onTemplateToggle(t.id)} 
+                  <Checkbox
+                    checked={selectedTemplateIds.includes(t.id)}
+                    onCheckedChange={() => onTemplateToggle(t.id)}
                   />
                   <span className="text-slate-700">{t.name}</span>
                 </label>
@@ -97,7 +105,7 @@ export function ExportBar({
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2 w-full md:w-auto">
+          <div className="flex flex-wrap gap-2 w-full md:w-auto items-center">
             {missingExamplesCount > 0 && (
               <Button
                 onClick={onGenerateAllMissing}
@@ -108,10 +116,32 @@ export function ExportBar({
                 {isGeneratingAll ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating {missingExamplesCount}...</>
                 ) : (
-                  <><Sparkles className="mr-2 h-4 w-4" /> Generate {missingExamplesCount} Missing Example{missingExamplesCount > 1 ? "s" : ""}</>
+                  <><Sparkles className="mr-2 h-4 w-4" /> Generate {missingExamplesCount} Missing</>
                 )}
               </Button>
             )}
+
+            <div className="flex items-center gap-2">
+              <DeckCombobox
+                decks={decks}
+                selectedDeckId={selectedDeckId}
+                onSelectDeck={onSelectDeck}
+                onCreateDeck={onCreateDeck}
+                isLoading={decksLoading}
+              />
+              <Button
+                onClick={onSaveToDeck}
+                disabled={isSaving || !selectedDeckId}
+                variant="outline"
+                className="h-10 px-4 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+              >
+                {isSaving ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+                ) : (
+                  <><BookmarkPlus className="mr-2 h-4 w-4" /> Add to Deck</>
+                )}
+              </Button>
+            </div>
 
             <Button
               onClick={onDownload}

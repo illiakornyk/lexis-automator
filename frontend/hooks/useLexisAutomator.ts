@@ -8,6 +8,8 @@ import { parseDefId } from "@/lib/utils/dictionary";
 import { useTemplates } from "./useTemplates";
 import { useProfile } from "./useProfile";
 import { compileToAnkiHtml } from "@/lib/utils/ankiCompiler";
+import { useDecks } from "./useDecks";
+import { useSaveToDecks, CardToSave } from "./useSaveToDecks";
 
 export function useLexisAutomator() {
   // --- Core state ---
@@ -41,6 +43,12 @@ export function useLexisAutomator() {
       setSelectedTemplateIds([templates[0].id]);
     }
   }, [isLoaded, templates, selectedTemplateIds]);
+
+  // --- Deck state ---
+  const { decks, isLoading: decksLoading, createDeck, incrementCardCount } = useDecks();
+  const { saveCards } = useSaveToDecks();
+  const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // --- Async action state ---
   const [isExporting, setIsExporting] = useState(false);
@@ -145,6 +153,32 @@ export function useLexisAutomator() {
     }
   };
 
+  const handleSaveToDeck = async () => {
+    if (!wordData || !selectedDeckId) return;
+    const deck = decks.find((d) => d.id === selectedDeckId);
+    if (!deck) return;
+
+    const cards: CardToSave[] = [];
+    for (const defId of selectedDefs) {
+      const { mIdx, dIdx } = parseDefId(defId);
+      const meaning = wordData.meanings[mIdx];
+      const def = meaning?.definitions[dIdx];
+      if (!def) continue;
+      cards.push({
+        word: wordData.word,
+        partOfSpeech: meaning.partOfSpeech,
+        phonetic: wordData.phonetics?.find((p) => p.text)?.text || "",
+        definition: def.definition,
+        example: def.example || "",
+      });
+    }
+
+    setIsSaving(true);
+    const success = await saveCards(selectedDeckId, deck.cardCount, cards);
+    if (success) incrementCardCount(selectedDeckId, cards.length);
+    setIsSaving(false);
+  };
+
   const handleDownload = async () => {
     if (!wordData) return;
 
@@ -235,11 +269,20 @@ export function useLexisAutomator() {
     isGeneratingAll,
     missingExamplesCount,
 
+    // Deck state
+    decks,
+    decksLoading,
+    selectedDeckId,
+    setSelectedDeckId,
+    isSaving,
+    createDeck,
+
     // Handlers
     toggleSelection,
     handleSearch,
     handleGenerateExample,
     handleGenerateAllMissing,
     handleDownload,
+    handleSaveToDeck,
   };
 }
