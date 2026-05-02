@@ -11,6 +11,11 @@ export function useDeckCards(deckId: string) {
   const supabase = createClient();
 
   const fetchCards = useCallback(async () => {
+    if (!deckId) {
+      setCards([]);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
       const { data, error } = await supabase

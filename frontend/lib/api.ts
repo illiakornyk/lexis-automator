@@ -12,6 +12,13 @@ export class ApiError extends Error {
   }
 }
 
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const supabase = createClient();
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -77,21 +84,9 @@ export const LexisApi = {
       afmt: string;
     }>;
   }): Promise<Blob> {
-    const supabase = createClient();
-    const { data } = await supabase.auth.getSession();
-    const token = data?.session?.access_token;
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     const response = await fetch(`${API_BASE_URL}/export/anki`, {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
@@ -106,15 +101,9 @@ export const LexisApi = {
     templateIds: string[];
     ttsSettings: { accent: string; gender: string };
   }): Promise<Blob> {
-    const supabase = createClient();
-    const { data } = await supabase.auth.getSession();
-    const token = data?.session?.access_token;
     const response = await fetch(`${API_BASE_URL}/export/deck`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
@@ -129,15 +118,9 @@ export const LexisApi = {
     templateIds: string[];
     ttsSettings: { accent: string; gender: string };
   }): Promise<Blob> {
-    const supabase = createClient();
-    const { data } = await supabase.auth.getSession();
-    const token = data?.session?.access_token;
     const response = await fetch(`${API_BASE_URL}/export/decks/archive`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
       body: JSON.stringify(payload),
     });
     if (!response.ok) {

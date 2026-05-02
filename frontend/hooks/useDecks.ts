@@ -24,11 +24,12 @@ export function useDecks() {
         .select('*, saved_cards(count)')
         .order('created_at', { ascending: true });
       if (error) throw error;
+      type DeckRow = { id: string; name: string; created_at: string; saved_cards: { count: number }[] };
       setDecks(
-        (data || []).map((d) => ({
+        ((data || []) as DeckRow[]).map((d) => ({
           id: d.id,
           name: d.name,
-          cardCount: (d.saved_cards as any[])[0]?.count ?? 0,
+          cardCount: d.saved_cards[0]?.count ?? 0,
           createdAt: d.created_at,
         })),
       );
