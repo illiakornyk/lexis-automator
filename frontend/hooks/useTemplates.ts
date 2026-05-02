@@ -5,7 +5,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { createClient } from '@/lib/supabase';
 import { toast } from 'sonner';
 
-export type FieldType = 'Word' | 'PartOfSpeech' | 'Phonetic' | 'Definition' | 'Example' | 'Audio' | 'Cloze' | 'TypeIn';
+export type FieldType = 'Word' | 'PartOfSpeech' | 'Phonetic' | 'Definition' | 'Example' | 'Audio' | 'Image' | 'Cloze' | 'TypeIn';
 
 export interface CustomTemplate {
     id: string;

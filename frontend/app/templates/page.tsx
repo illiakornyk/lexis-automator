@@ -36,6 +36,7 @@ const AVAILABLE_FIELDS: FieldType[] = [
   "Definition",
   "Example",
   "Audio",
+  "Image",
   "TypeIn",
   "Cloze",
 ];

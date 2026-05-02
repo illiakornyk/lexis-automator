@@ -26,19 +26,19 @@ const DEFAULT_TEMPLATES_MAP: Record<string, TemplateRaw> = {
     name: 'Recognition',
     isCloze: false,
     frontFields: ['Word', 'PartOfSpeech', 'Phonetic'],
-    backFields: ['Word', 'Definition', 'Example', 'Audio'],
+    backFields: ['Word', 'Definition', 'Example', 'Image', 'Audio'],
   },
   'default-production': {
     name: 'Production',
     isCloze: false,
     frontFields: ['Definition'],
-    backFields: ['Word', 'PartOfSpeech', 'Phonetic', 'Example', 'Audio'],
+    backFields: ['Word', 'PartOfSpeech', 'Phonetic', 'Example', 'Image', 'Audio'],
   },
   'default-type-in': {
     name: 'Type-In',
     isCloze: false,
     frontFields: ['Definition', 'TypeIn'],
-    backFields: ['Definition', 'TypeIn', 'PartOfSpeech', 'Phonetic', 'Example', 'Audio'],
+    backFields: ['Definition', 'TypeIn', 'PartOfSpeech', 'Phonetic', 'Example', 'Image', 'Audio'],
   },
   'default-cloze': {
     name: 'Cloze',
