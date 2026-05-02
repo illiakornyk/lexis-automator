@@ -28,6 +28,10 @@ export class AiService {
   }
 
   async generateExample(word: string, definition: string, apiKey?: string): Promise<string> {
+    this.logger.log(`generateExample called — word: "${word}", definition length: ${definition?.length}`);
+    if (!word || !definition) {
+      throw new InternalServerErrorException('word and definition are required');
+    }
     try {
       let client = this.openai;
       let targetModel = this.model;
