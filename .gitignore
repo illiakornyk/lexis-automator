@@ -1,0 +1,20 @@
+# Supabase
+supabase/migrations/supabase/.temp/
+supabase/.temp/
+
+# Node
+node_modules/
+dist/
+.next/
+out/
+build/
+*.log
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db

@@ -8,6 +8,7 @@ class CardData(BaseModel):
     definition: str
     example: str
     audio_path: Optional[str] = None
+    image_path: Optional[str] = None
 
 class CustomTemplateSchema(BaseModel):
     name: str

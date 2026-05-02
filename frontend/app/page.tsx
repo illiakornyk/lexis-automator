@@ -37,6 +37,13 @@ export default function LexisAutomatorUI() {
     handleGenerateExample,
     handleGenerateAllMissing,
     handleDownload,
+    decks,
+    decksLoading,
+    selectedDeckId,
+    setSelectedDeckId,
+    isSaving,
+    createDeck,
+    handleSaveToDeck,
   } = useLexisAutomator();
 
   return (
@@ -128,6 +135,13 @@ export default function LexisAutomatorUI() {
         isGeneratingAll={isGeneratingAll}
         onDownload={handleDownload}
         onGenerateAllMissing={handleGenerateAllMissing}
+        decks={decks}
+        decksLoading={decksLoading}
+        selectedDeckId={selectedDeckId}
+        onSelectDeck={setSelectedDeckId}
+        onCreateDeck={async (name) => { await createDeck(name); }}
+        isSaving={isSaving}
+        onSaveToDeck={handleSaveToDeck}
       />
     </div>
   );

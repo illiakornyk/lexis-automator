@@ -6,7 +6,10 @@ import { LexisApi } from "@/lib/api";
 import { DictionaryEntry } from "@/lib/types";
 import { parseDefId } from "@/lib/utils/dictionary";
 import { useTemplates } from "./useTemplates";
+import { useProfile } from "./useProfile";
 import { compileToAnkiHtml } from "@/lib/utils/ankiCompiler";
+import { useDecks } from "./useDecks";
+import { useSaveToDecks, CardToSave } from "./useSaveToDecks";
 
 export function useLexisAutomator() {
   // --- Core state ---
@@ -17,8 +20,18 @@ export function useLexisAutomator() {
   const [generatingExamples, setGeneratingExamples] = useState<Record<string, boolean>>({});
 
   // --- TTS settings ---
+  const { profile, isLoading: profileLoading } = useProfile();
   const [accent, setAccent] = useState("US");
   const [gender, setGender] = useState("FEMALE");
+  const [hasInitializedProfile, setHasInitializedProfile] = useState(false);
+
+  useEffect(() => {
+    if (!profileLoading && !hasInitializedProfile) {
+      setAccent(profile.default_tts_accent);
+      setGender(profile.default_tts_gender);
+      setHasInitializedProfile(true);
+    }
+  }, [profile, profileLoading, hasInitializedProfile]);
 
   // --- Card type toggles ---
   const { templates, isLoaded } = useTemplates();
@@ -30,6 +43,12 @@ export function useLexisAutomator() {
       setSelectedTemplateIds([templates[0].id]);
     }
   }, [isLoaded, templates, selectedTemplateIds]);
+
+  // --- Deck state ---
+  const { decks, isLoading: decksLoading, createDeck, incrementCardCount } = useDecks();
+  const { saveCards } = useSaveToDecks();
+  const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // --- Async action state ---
   const [isExporting, setIsExporting] = useState(false);
@@ -85,7 +104,7 @@ export function useLexisAutomator() {
   ) => {
     setGeneratingExamples((prev) => ({ ...prev, [defId]: true }));
     try {
-      const res = await LexisApi.generateExample(wordData!.word, definitionStr);
+      const res = await LexisApi.generateExample(wordData!.word, definitionStr, profile.openai_api_key);
       updateExample(mIdx, dIdx, res.example);
       toast.success("AI Example generated successfully!");
     } catch (error: any) {
@@ -118,7 +137,7 @@ export function useLexisAutomator() {
     for (const item of missing) {
       setGeneratingExamples((prev) => ({ ...prev, [item.defId]: true }));
       try {
-        const res = await LexisApi.generateExample(wordData.word, item.definition);
+        const res = await LexisApi.generateExample(wordData.word, item.definition, profile.openai_api_key);
         updateExample(item.mIdx, item.dIdx, res.example);
         successCount++;
       } catch (error: any) {
@@ -132,6 +151,32 @@ export function useLexisAutomator() {
     if (successCount > 0) {
       toast.success(`Generated ${successCount} example${successCount > 1 ? "s" : ""} successfully!`);
     }
+  };
+
+  const handleSaveToDeck = async () => {
+    if (!wordData || !selectedDeckId) return;
+    const deck = decks.find((d) => d.id === selectedDeckId);
+    if (!deck) return;
+
+    const cards: CardToSave[] = [];
+    for (const defId of selectedDefs) {
+      const { mIdx, dIdx } = parseDefId(defId);
+      const meaning = wordData.meanings[mIdx];
+      const def = meaning?.definitions[dIdx];
+      if (!def) continue;
+      cards.push({
+        word: wordData.word,
+        partOfSpeech: meaning.partOfSpeech,
+        phonetic: wordData.phonetics?.find((p) => p.text)?.text || "",
+        definition: def.definition,
+        example: def.example || "",
+      });
+    }
+
+    setIsSaving(true);
+    const success = await saveCards(selectedDeckId, deck.cardCount, cards);
+    if (success) incrementCardCount(selectedDeckId, cards.length);
+    setIsSaving(false);
   };
 
   const handleDownload = async () => {
@@ -224,11 +269,20 @@ export function useLexisAutomator() {
     isGeneratingAll,
     missingExamplesCount,
 
+    // Deck state
+    decks,
+    decksLoading,
+    selectedDeckId,
+    setSelectedDeckId,
+    isSaving,
+    createDeck,
+
     // Handlers
     toggleSelection,
     handleSearch,
     handleGenerateExample,
     handleGenerateAllMissing,
     handleDownload,
+    handleSaveToDeck,
   };
 }

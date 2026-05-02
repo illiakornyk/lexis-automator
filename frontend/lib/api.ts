@@ -1,4 +1,5 @@
 import { DictionaryEntry } from './types';
+import { createClient } from './supabase';
 
 // In Next.js, env variables prefixed with NEXT_PUBLIC_ are available in the browser.
 // Fallback to localhost:3000 if not set in .env.local
@@ -9,6 +10,13 @@ export class ApiError extends Error {
     super(message);
     this.name = 'ApiError';
   }
+}
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const supabase = createClient();
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -34,11 +42,11 @@ export const LexisApi = {
   /**
    * Generates an example sentence using the LLM via the backend.
    */
-  async generateExample(word: string, definition: string): Promise<{ example: string }> {
+  async generateExample(word: string, definition: string, apiKey?: string | null): Promise<{ example: string }> {
     const response = await fetch(`${API_BASE_URL}/dictionary/example`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ word, definition }),
+      body: JSON.stringify({ word, definition, apiKey }),
     });
     return handleResponse<{ example: string }>(response);
   },
@@ -78,7 +86,7 @@ export const LexisApi = {
   }): Promise<Blob> {
     const response = await fetch(`${API_BASE_URL}/export/anki`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
@@ -86,5 +94,84 @@ export const LexisApi = {
       throw new ApiError(response.status, errorData.message || 'Failed to generate Anki deck.');
     }
     return response.blob();
+  },
+
+  async exportDeck(payload: {
+    deckId: string;
+    templateIds: string[];
+    ttsSettings: { accent: string; gender: string };
+  }): Promise<Blob> {
+    const response = await fetch(`${API_BASE_URL}/export/deck`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(response.status, errorData.message || 'Failed to export deck.');
+    }
+    return response.blob();
+  },
+
+  async exportDecksArchive(payload: {
+    deckIds: string[];
+    templateIds: string[];
+    ttsSettings: { accent: string; gender: string };
+  }): Promise<Blob> {
+    const response = await fetch(`${API_BASE_URL}/export/decks/archive`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(response.status, errorData.message || 'Failed to export archive.');
+    }
+    return response.blob();
+  },
+
+  async searchImages(q: string, page = 1): Promise<Array<{ id: string; previewUrl: string; webformatUrl: string }>> {
+    const params = new URLSearchParams({ q, page: String(page) });
+    const response = await fetch(`${API_BASE_URL}/images/search?${params}`, {
+      headers: { ...(await getAuthHeaders()) },
+    });
+    return handleResponse(response);
+  },
+
+  async saveImageFromUrl(cardId: string, url: string): Promise<{ imagePath: string }> {
+    const response = await fetch(`${API_BASE_URL}/images/save-from-url`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
+      body: JSON.stringify({ cardId, url }),
+    });
+    return handleResponse(response);
+  },
+
+  async uploadImage(cardId: string, file: File): Promise<{ imagePath: string }> {
+    const form = new FormData();
+    form.append('file', file);
+    const response = await fetch(`${API_BASE_URL}/images/upload/${encodeURIComponent(cardId)}`, {
+      method: 'POST',
+      headers: { ...(await getAuthHeaders()) },
+      body: form,
+    });
+    return handleResponse(response);
+  },
+
+  async removeImage(cardId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/images/${encodeURIComponent(cardId)}`, {
+      method: 'DELETE',
+      headers: { ...(await getAuthHeaders()) },
+    });
+    await handleResponse(response);
+  },
+
+  async getImageSignedUrl(storagePath: string): Promise<string> {
+    const params = new URLSearchParams({ path: storagePath });
+    const response = await fetch(`${API_BASE_URL}/images/signed-url?${params}`, {
+      headers: { ...(await getAuthHeaders()) },
+    });
+    const data = await handleResponse<{ url: string }>(response);
+    return data.url;
   },
 };
