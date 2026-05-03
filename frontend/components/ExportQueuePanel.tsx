@@ -126,7 +126,7 @@ export function ExportQueuePanel() {
   const badgeCount = activeCount || doneCount;
 
   return (
-    <div className="fixed bottom-20 right-6 z-50 w-80 shadow-xl rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <div className="fixed top-20 right-6 z-50 w-80 shadow-xl rounded-xl border border-slate-200 bg-white overflow-hidden">
       {/* Header — always visible */}
       <button
         className="w-full flex items-center gap-2 px-4 py-3 bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"

@@ -193,6 +193,38 @@ export function useLexisAutomator() {
     setIsSaving(false);
   };
 
+  const handleQueueExport = async (enqueue: (payload: { deckIds: string[]; templateIds: string[]; accent: string; gender: string }) => Promise<any>) => {
+    if (!wordData || !selectedDeckId || selectedTemplateIds.length === 0) return;
+    const deck = decks.find((d) => d.id === selectedDeckId);
+    if (!deck) return;
+
+    const cards: CardToSave[] = [];
+    for (const defId of selectedDefs) {
+      const { mIdx, dIdx } = parseDefId(defId);
+      const meaning = wordData.meanings[mIdx];
+      const def = meaning?.definitions[dIdx];
+      if (!def) continue;
+      cards.push({
+        word: wordData.word,
+        partOfSpeech: meaning.partOfSpeech,
+        phonetic: wordData.phonetics?.find((p) => p.text)?.text || "",
+        definition: def.definition,
+        example: def.example || "",
+      });
+    }
+
+    setIsSaving(true);
+    try {
+      await saveCards(selectedDeckId, deck.cardCount, cards);
+      await enqueue({ deckIds: [selectedDeckId], templateIds: selectedTemplateIds, accent, gender });
+      toast.success("Added to export queue!");
+    } catch {
+      toast.error("Failed to queue export.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleDownload = async () => {
     if (!wordData) return;
 
@@ -295,6 +327,7 @@ export function useLexisAutomator() {
     // Handlers
     toggleSelection,
     clearSelection,
+    handleQueueExport,
     handleSearch,
     handleGenerateExample,
     handleGenerateAllMissing,

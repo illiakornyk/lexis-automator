@@ -12,8 +12,10 @@ import { WordHeader } from "@/components/WordHeader";
 import { DefinitionCard } from "@/components/DefinitionCard";
 import { ExportBar } from "@/components/ExportBar";
 import { useLexisAutomator } from "@/hooks/useLexisAutomator";
+import { useExportJobsContext } from "@/contexts/ExportJobsContext";
 
 export default function LexisAutomatorUI() {
+  const { enqueue } = useExportJobsContext();
   const [collapsedPos, setCollapsedPos] = useState<Set<string>>(new Set());
 
   const toggleCollapse = (pos: string) => {
@@ -46,6 +48,7 @@ export default function LexisAutomatorUI() {
     missingExamplesCount,
     toggleSelection,
     clearSelection,
+    handleQueueExport,
     handleSearch,
     handleGenerateExample,
     handleGenerateAllMissing,
@@ -187,9 +190,9 @@ export default function LexisAutomatorUI() {
             prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
           );
         }}
-        isExporting={isExporting}
+        isExporting={isSaving}
         isGeneratingAll={isGeneratingAll}
-        onDownload={handleDownload}
+        onDownload={() => handleQueueExport(enqueue)}
         onGenerateAllMissing={handleGenerateAllMissing}
         decks={decks}
         decksLoading={decksLoading}
