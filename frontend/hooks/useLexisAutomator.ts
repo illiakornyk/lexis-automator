@@ -74,8 +74,7 @@ export function useLexisAutomator() {
     );
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = async () => {
     if (!searchQuery.trim()) return;
 
     setIsLoading(true);
