@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/components/AuthProvider";
 import { AppShell } from "@/components/AppShell";
+import { ExportJobsProvider } from "@/contexts/ExportJobsContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,9 +33,11 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>
-          <AppShell />
-          {children}
-          <Toaster />
+          <ExportJobsProvider>
+            <AppShell />
+            {children}
+            <Toaster />
+          </ExportJobsProvider>
         </AuthProvider>
       </body>
     </html>

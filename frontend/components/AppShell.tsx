@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CheckCircle2, Library, LayoutTemplate, LogOut, Settings } from "lucide-react";
+import { CheckCircle2, Library, LayoutTemplate, LogOut, Settings, ArrowUp } from "lucide-react";
+import { ExportQueuePanel } from "@/components/ExportQueuePanel";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { createClient } from "@/lib/supabase";
@@ -103,6 +104,29 @@ function AvatarMenu({ email }: { email: string }) {
   );
 }
 
+function BackToTop() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 300);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      aria-label="Back to top"
+      className={cn(
+        "fixed bottom-6 right-6 z-50 h-10 w-10 rounded-full bg-indigo-600 text-white shadow-lg flex items-center justify-center hover:bg-indigo-700 transition-all duration-200",
+        visible ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-4 pointer-events-none"
+      )}
+    >
+      <ArrowUp size={18} />
+    </button>
+  );
+}
+
 export function AppShell() {
   const { user, isLoading } = useAuth();
   const pathname = usePathname();
@@ -110,6 +134,7 @@ export function AppShell() {
   if (pathname === "/login") return null;
 
   return (
+    <>
     <header className="bg-white border-b sticky top-0 z-40 shadow-sm">
       <div className="max-w-5xl mx-auto px-4 md:px-8 h-14 flex items-center gap-3">
         <Link
@@ -148,5 +173,8 @@ export function AppShell() {
         )}
       </div>
     </header>
+    <BackToTop />
+    <ExportQueuePanel />
+    </>
   );
 }

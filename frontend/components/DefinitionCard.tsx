@@ -26,7 +26,10 @@ export function DefinitionCard({
   onGenerateExample,
 }: DefinitionCardProps) {
   return (
-    <Card className={`transition-all duration-200 ${isSelected ? "border-indigo-500 ring-1 ring-indigo-500 bg-indigo-50/50" : "hover:border-slate-300"}`}>
+    <Card
+      className={`transition-all duration-200 cursor-pointer ${isSelected ? "border-indigo-500 ring-1 ring-indigo-500 bg-indigo-50/50" : "hover:border-slate-300"}`}
+      onClick={() => onToggleSelection(defId)}
+    >
       <CardHeader className="py-4">
         <div className="flex items-start gap-4">
           <Checkbox
@@ -34,16 +37,17 @@ export function DefinitionCard({
             checked={isSelected}
             onCheckedChange={() => onToggleSelection(defId)}
             className="mt-1"
+            onClick={(e) => e.stopPropagation()}
           />
           <div className="grid gap-1.5 flex-1">
-            <label htmlFor={`check-${defId}`} className="text-lg font-medium leading-tight cursor-pointer">
+            <div className="text-lg font-medium leading-tight">
               {definition}
-            </label>
+            </div>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="py-0 pb-4 ml-8">
+      <CardContent className="py-0 pb-4 ml-8" onClick={(e) => e.stopPropagation()}>
         {example ? (
           <div className="bg-white border rounded-md p-3 text-sm text-slate-600 mb-3 italic shadow-sm">
             &quot;{example}&quot;

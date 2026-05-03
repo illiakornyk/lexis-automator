@@ -92,6 +92,49 @@ export class ExportService {
     return response.data.file_path;
   }
 
+  async buildApkgForJob(
+    deckId: string,
+    userId: string,
+    templateIds: string[],
+    ttsSettings: TtsSettingsDto,
+  ): Promise<{ apkgPath: string; deckName: string; cleanup: () => Promise<void> }> {
+    const { data: deck } = await this.supabase
+      .from('decks')
+      .select('name')
+      .eq('id', deckId)
+      .eq('user_id', userId)
+      .single();
+
+    if (!deck) throw new Error(`Deck ${deckId} not found`);
+
+    const { data: rawCards } = await this.supabase
+      .from('saved_cards')
+      .select('*')
+      .eq('deck_id', deckId)
+      .order('created_at', { ascending: true });
+
+    if (!rawCards || rawCards.length === 0)
+      throw new Error(`Deck "${deck.name}" has no cards`);
+
+    const cards = rawCards.map((c) => ({
+      word: c.word,
+      partOfSpeech: c.part_of_speech,
+      phonetic: c.phonetic || '',
+      definition: c.definition,
+      example: c.example || '',
+      imagePath: c.image_path ?? null,
+    }));
+
+    const templates = await resolveAndCompileTemplates(templateIds, this.supabase);
+
+    const tempDir = path.join(process.cwd(), 'temp', `job-${uuidv4()}`);
+    await fs.mkdir(tempDir, { recursive: true });
+    const cleanup = () => fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+
+    const apkgPath = await this.buildApkgFile(deck.name, cards, ttsSettings, templates, tempDir);
+    return { apkgPath, deckName: deck.name, cleanup };
+  }
+
   async generateApkg(exportDto: ExportAnkiDto) {
     const tempDir = path.join(process.cwd(), 'temp', `export-${uuidv4()}`);
     await fs.mkdir(tempDir, { recursive: true });

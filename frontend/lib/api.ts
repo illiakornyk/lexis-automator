@@ -174,4 +174,56 @@ export const LexisApi = {
     const data = await handleResponse<{ url: string }>(response);
     return data.url;
   },
+
+  // --- Export Jobs ---
+
+  async createExportJobs(payload: {
+    deckIds: string[];
+    templateIds: string[];
+    accent: string;
+    gender: string;
+  }): Promise<ExportJob[]> {
+    const response = await fetch(`${API_BASE_URL}/export-jobs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(response);
+  },
+
+  async getExportJobs(): Promise<ExportJob[]> {
+    const response = await fetch(`${API_BASE_URL}/export-jobs`, {
+      headers: { ...(await getAuthHeaders()) },
+    });
+    return handleResponse(response);
+  },
+
+  async getExportJobDownloadUrl(jobId: string): Promise<string> {
+    const response = await fetch(`${API_BASE_URL}/export-jobs/${jobId}/download`, {
+      headers: { ...(await getAuthHeaders()) },
+    });
+    const data = await handleResponse<{ url: string }>(response);
+    return data.url;
+  },
+
+  async deleteExportJob(jobId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/export-jobs/${jobId}`, {
+      method: 'DELETE',
+      headers: { ...(await getAuthHeaders()) },
+    });
+    if (response.status !== 204) await handleResponse(response);
+  },
 };
+
+export interface ExportJob {
+  id: string;
+  deck_id: string | null;
+  deck_name: string;
+  status: 'pending' | 'processing' | 'done' | 'failed' | 'cancelled';
+  error_message: string | null;
+  attempts: number;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  expires_at: string;
+}

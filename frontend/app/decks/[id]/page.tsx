@@ -4,12 +4,13 @@ import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft,
-  Download,
   ImageIcon,
+  LayoutTemplate,
   Loader2,
+  PackagePlus,
   Pencil,
   Trash2,
+  Volume2,
   X,
   Check,
 } from "lucide-react";
@@ -24,6 +25,7 @@ import { useTemplates } from "@/hooks/useTemplates";
 import { useAuth } from "@/components/AuthProvider";
 import { CardImagePicker } from "@/components/CardImagePicker";
 import { LexisApi } from "@/lib/api";
+import { useExportJobsContext } from "@/contexts/ExportJobsContext";
 import { toast } from "sonner";
 
 export default function DeckDetailPage({
@@ -38,12 +40,13 @@ export default function DeckDetailPage({
   const { cards, isLoading: cardsLoading, removeCard, updateCardImage } = useDeckCards(deckId);
   const { templates, isLoaded: templatesLoaded } = useTemplates();
 
+  const { enqueue, isLoading: isEnqueuing } = useExportJobsContext();
+
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>(["default-recognition"]);
   const [accent, setAccent] = useState("US");
   const [gender, setGender] = useState("FEMALE");
-  const [isExporting, setIsExporting] = useState(false);
   const [pickerCardId, setPickerCardId] = useState<string | null>(null);
   const [imageSignedUrls, setImageSignedUrls] = useState<Record<string, string>>({});
 
@@ -107,44 +110,33 @@ export default function DeckDetailPage({
     router.push("/decks");
   };
 
-  const handleDownload = async () => {
+  const handleEnqueue = async () => {
     if (cards.length === 0) {
       toast.error("This deck has no cards to export.");
       return;
     }
-    setIsExporting(true);
-    try {
-      const blob = await LexisApi.exportDeck({
-        deckId,
-        templateIds: selectedTemplateIds,
-        ttsSettings: { accent, gender },
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${deck.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.apkg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success("Deck downloaded!");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to download deck.");
-    } finally {
-      setIsExporting(false);
+    const created = await enqueue({
+      deckIds: [deckId],
+      templateIds: selectedTemplateIds,
+      accent,
+      gender,
+    });
+    if (created.length > 0) {
+      toast.success("Added to export queue — check the panel in the bottom-right.");
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-4xl mx-auto px-4 md:px-8 py-8 space-y-6">
-        <div className="flex items-center gap-3 flex-wrap">
-          <Link href="/decks">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-1.5 text-sm text-slate-500">
+          <Link href="/decks" className="hover:text-indigo-600 transition-colors">Decks</Link>
+          <span>›</span>
+          <span className="text-slate-800 font-medium truncate max-w-xs">{deck.name}</span>
+        </div>
 
+        <div className="flex items-center gap-3 flex-wrap">
           {isRenaming ? (
             <div className="flex items-center gap-2 flex-1">
               <Input
@@ -191,47 +183,86 @@ export default function DeckDetailPage({
           </Button>
         </div>
 
-        <div className="bg-white border rounded-xl p-4 flex flex-wrap items-center gap-4">
-          <span className="text-sm font-medium text-slate-600">Templates:</span>
-          {templatesLoaded &&
-            templates.map((t) => (
-              <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm">
-                <Checkbox
-                  checked={selectedTemplateIds.includes(t.id)}
-                  onCheckedChange={() => toggleTemplate(t.id)}
-                />
-                <span className="text-slate-700">{t.name}</span>
-              </label>
-            ))}
-          <Select value={accent} onValueChange={setAccent}>
-            <SelectTrigger className="w-[110px] h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="US">American</SelectItem>
-              <SelectItem value="GB">British</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={gender} onValueChange={setGender}>
-            <SelectTrigger className="w-[100px] h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="FEMALE">Female</SelectItem>
-              <SelectItem value="MALE">Male</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            onClick={handleDownload}
-            disabled={isExporting || cards.length === 0}
-            className="ml-auto bg-indigo-600 hover:bg-indigo-700"
-          >
-            {isExporting ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
-            ) : (
-              <><Download className="mr-2 h-4 w-4" /> Download .apkg</>
-            )}
-          </Button>
+        <div className="bg-white border rounded-xl px-6 py-4">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 sm:divide-x sm:divide-slate-200">
+
+            {/* Zone 1 — Templates */}
+            <div className="flex flex-col gap-2 sm:pr-6 sm:w-[30%] min-w-0">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                <LayoutTemplate size={12} />
+                Templates
+              </p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                {templatesLoaded ? (
+                  templates.map((t) => (
+                    <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-600">
+                      <Checkbox
+                        checked={selectedTemplateIds.includes(t.id)}
+                        onCheckedChange={() => toggleTemplate(t.id)}
+                      />
+                      {t.name}
+                    </label>
+                  ))
+                ) : (
+                  <span className="text-slate-400 text-sm">Loading…</span>
+                )}
+              </div>
+            </div>
+
+            {/* Zone 2 — Voice */}
+            <div className="flex flex-col gap-2 sm:px-6 sm:w-[45%]">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                <Volume2 size={12} />
+                Voice
+              </p>
+              <div className="flex items-center gap-1.5">
+                <div className="flex-1">
+                  <Select value={accent} onValueChange={setAccent}>
+                    <SelectTrigger className="w-full h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="US">🇺🇸 American</SelectItem>
+                      <SelectItem value="GB">🇬🇧 British</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1">
+                  <Select value={gender} onValueChange={setGender}>
+                    <SelectTrigger className="w-full h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="FEMALE">♀ Female</SelectItem>
+                      <SelectItem value="MALE">♂ Male</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Zone 3 — Export */}
+            <div className="flex flex-col gap-2 sm:pl-6 sm:w-[25%]">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                <PackagePlus size={12} />
+                Export
+              </p>
+              <div>
+                <Button
+                  onClick={handleEnqueue}
+                  disabled={isEnqueuing || cards.length === 0}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700"
+                >
+                  {isEnqueuing ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Queuing…</>
+                  ) : (
+                    <><PackagePlus className="mr-2 h-4 w-4" />Add to Queue</>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+          </div>
         </div>
 
         {cardsLoading ? (
@@ -258,7 +289,7 @@ export default function DeckDetailPage({
                   <th className="text-left px-4 py-3 font-medium text-slate-600 hidden md:table-cell">
                     Example
                   </th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600 hidden lg:table-cell">
+                  <th className="text-left px-4 py-3 font-medium text-slate-600 hidden sm:table-cell">
                     Image
                   </th>
                   <th className="px-4 py-3"></th>
@@ -285,7 +316,7 @@ export default function DeckDetailPage({
                     <td className="px-4 py-3 text-slate-500 italic hidden md:table-cell max-w-xs">
                       <span className="line-clamp-2">{card.example || "—"}</span>
                     </td>
-                    <td className="px-4 py-3 hidden lg:table-cell">
+                    <td className="px-4 py-3 hidden sm:table-cell">
                       <button
                         className="rounded-md overflow-hidden border border-slate-200 hover:border-indigo-400 transition-colors"
                         onClick={() => openPicker(card.id)}
