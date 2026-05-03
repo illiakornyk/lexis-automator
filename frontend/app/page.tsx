@@ -195,7 +195,7 @@ export default function LexisAutomatorUI() {
         decksLoading={decksLoading}
         selectedDeckId={selectedDeckId}
         onSelectDeck={setSelectedDeckId}
-        onCreateDeck={async (name) => { await createDeck(name); }}
+        onCreateDeck={async (name) => { const deck = await createDeck(name); return deck?.id ?? null; }}
         isSaving={isSaving}
         onSaveToDeck={handleSaveToDeck}
       />

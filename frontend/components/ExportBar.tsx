@@ -27,7 +27,7 @@ interface ExportBarProps {
   decksLoading: boolean;
   selectedDeckId: string | null;
   onSelectDeck: (id: string) => void;
-  onCreateDeck: (name: string) => Promise<void>;
+  onCreateDeck: (name: string) => Promise<string | null>;
   isSaving: boolean;
   onSaveToDeck: () => void;
 }

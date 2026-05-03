@@ -20,7 +20,7 @@ interface DeckComboboxProps {
   decks: Deck[];
   selectedDeckId: string | null;
   onSelectDeck: (deckId: string) => void;
-  onCreateDeck: (name: string) => Promise<void>;
+  onCreateDeck: (name: string) => Promise<string | null>;
   isLoading: boolean;
 }
 
@@ -42,7 +42,11 @@ export function DeckCombobox({
   const handleCreate = async () => {
     if (!newDeckName.trim()) return;
     setIsCreating(true);
-    await onCreateDeck(newDeckName.trim());
+    const newDeckId = await onCreateDeck(newDeckName.trim());
+    if (newDeckId) {
+      onSelectDeck(newDeckId);
+      setOpen(false);
+    }
     setNewDeckName("");
     setShowCreate(false);
     setIsCreating(false);
