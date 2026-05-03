@@ -4,10 +4,10 @@ import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Download,
   ImageIcon,
   LayoutTemplate,
   Loader2,
+  PackagePlus,
   Pencil,
   Trash2,
   Volume2,
@@ -25,6 +25,7 @@ import { useTemplates } from "@/hooks/useTemplates";
 import { useAuth } from "@/components/AuthProvider";
 import { CardImagePicker } from "@/components/CardImagePicker";
 import { LexisApi } from "@/lib/api";
+import { useExportJobsContext } from "@/contexts/ExportJobsContext";
 import { toast } from "sonner";
 
 export default function DeckDetailPage({
@@ -39,12 +40,13 @@ export default function DeckDetailPage({
   const { cards, isLoading: cardsLoading, removeCard, updateCardImage } = useDeckCards(deckId);
   const { templates, isLoaded: templatesLoaded } = useTemplates();
 
+  const { enqueue, isLoading: isEnqueuing } = useExportJobsContext();
+
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>(["default-recognition"]);
   const [accent, setAccent] = useState("US");
   const [gender, setGender] = useState("FEMALE");
-  const [isExporting, setIsExporting] = useState(false);
   const [pickerCardId, setPickerCardId] = useState<string | null>(null);
   const [imageSignedUrls, setImageSignedUrls] = useState<Record<string, string>>({});
 
@@ -108,31 +110,19 @@ export default function DeckDetailPage({
     router.push("/decks");
   };
 
-  const handleDownload = async () => {
+  const handleEnqueue = async () => {
     if (cards.length === 0) {
       toast.error("This deck has no cards to export.");
       return;
     }
-    setIsExporting(true);
-    try {
-      const blob = await LexisApi.exportDeck({
-        deckId,
-        templateIds: selectedTemplateIds,
-        ttsSettings: { accent, gender },
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${deck.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.apkg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success("Deck downloaded!");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to download deck.");
-    } finally {
-      setIsExporting(false);
+    const created = await enqueue({
+      deckIds: [deckId],
+      templateIds: selectedTemplateIds,
+      accent,
+      gender,
+    });
+    if (created.length > 0) {
+      toast.success("Added to export queue — check the panel in the bottom-right.");
     }
   };
 
@@ -254,19 +244,19 @@ export default function DeckDetailPage({
             {/* Zone 3 — Export */}
             <div className="flex flex-col gap-2 sm:pl-6 sm:w-[25%]">
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                <Download size={12} />
+                <PackagePlus size={12} />
                 Export
               </p>
               <div>
                 <Button
-                  onClick={handleDownload}
-                  disabled={isExporting || cards.length === 0}
+                  onClick={handleEnqueue}
+                  disabled={isEnqueuing || cards.length === 0}
                   className="w-full bg-indigo-600 hover:bg-indigo-700"
                 >
-                  {isExporting ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating…</>
+                  {isEnqueuing ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Queuing…</>
                   ) : (
-                    <><Download className="mr-2 h-4 w-4" />Download .apkg</>
+                    <><PackagePlus className="mr-2 h-4 w-4" />Add to Queue</>
                   )}
                 </Button>
               </div>

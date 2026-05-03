@@ -3,7 +3,8 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Library, Download, Trash2, Loader2, Plus, Check, X, LayoutTemplate, Volume2 } from "lucide-react";
+import { Library, PackagePlus, Trash2, Loader2, Plus, Check, X, LayoutTemplate, Volume2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,19 +14,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useDecks } from "@/hooks/useDecks";
 import { useTemplates } from "@/hooks/useTemplates";
 import { useAuth } from "@/components/AuthProvider";
-import { LexisApi } from "@/lib/api";
-import { toast } from "sonner";
+import { useExportJobsContext } from "@/contexts/ExportJobsContext";
 
 export default function DecksPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const { decks, isLoading, createDeck, deleteDeck } = useDecks();
   const { templates, isLoaded: templatesLoaded } = useTemplates();
+  const { enqueue, isLoading: isEnqueuing } = useExportJobsContext();
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isCreating, setIsCreating] = useState(false);
   const [newDeckName, setNewDeckName] = useState("");
-  const [isExporting, setIsExporting] = useState(false);
   const newDeckInputRef = useRef<HTMLInputElement>(null);
   const [bulkTemplateIds, setBulkTemplateIds] = useState<string[]>(["default-recognition"]);
   const [bulkAccent, setBulkAccent] = useState("US");
@@ -67,28 +67,17 @@ export default function DecksPage() {
     );
   };
 
-  const handleBulkDownload = async () => {
+  const handleBulkEnqueue = async () => {
     if (selectedIds.size < 2) return;
-    setIsExporting(true);
-    try {
-      const blob = await LexisApi.exportDecksArchive({
-        deckIds: Array.from(selectedIds),
-        templateIds: bulkTemplateIds,
-        ttsSettings: { accent: bulkAccent, gender: bulkGender },
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "lexis_decks.zip";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success("Archive downloaded!");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to download archive.");
-    } finally {
-      setIsExporting(false);
+    const created = await enqueue({
+      deckIds: Array.from(selectedIds),
+      templateIds: bulkTemplateIds,
+      accent: bulkAccent,
+      gender: bulkGender,
+    });
+    if (created.length > 0) {
+      setSelectedIds(new Set());
+      toast.success(`${created.length} deck${created.length !== 1 ? "s" : ""} added to export queue.`);
     }
   };
 
@@ -277,22 +266,22 @@ export default function DecksPage() {
                 </div>
               </div>
 
-              {/* Zone 3 — Download */}
-              <div className="flex flex-col gap-2 sm:pl-6 flex-1">
+              {/* Zone 3 — Export */}
+              <div className="flex flex-col gap-2 sm:pl-6 shrink-0">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                  <Download size={12} />
+                  <PackagePlus size={12} />
                   Export
                 </p>
                 <div className="flex items-center">
                   <Button
-                    onClick={handleBulkDownload}
-                    disabled={isExporting}
+                    onClick={handleBulkEnqueue}
+                    disabled={isEnqueuing}
                     className="bg-indigo-600 hover:bg-indigo-700 sm:ml-auto"
                   >
-                    {isExporting ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating…</>
+                    {isEnqueuing ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Queuing…</>
                     ) : (
-                      <><Download className="mr-2 h-4 w-4" />Download {selectedIds.size} decks as ZIP</>
+                      <><PackagePlus className="mr-2 h-4 w-4" />Queue {selectedIds.size} decks</>
                     )}
                   </Button>
                 </div>

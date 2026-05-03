@@ -9,5 +9,6 @@ import { ImagesModule } from '../images/images.module';
   imports: [HttpModule, TtsModule, ImagesModule],
   controllers: [ExportController],
   providers: [ExportService],
+  exports: [ExportService],
 })
 export class ExportModule {}

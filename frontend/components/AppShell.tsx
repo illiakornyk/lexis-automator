@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { CheckCircle2, Library, LayoutTemplate, LogOut, Settings, ArrowUp } from "lucide-react";
+import { ExportQueuePanel } from "@/components/ExportQueuePanel";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { createClient } from "@/lib/supabase";
@@ -173,6 +174,7 @@ export function AppShell() {
       </div>
     </header>
     <BackToTop />
+    <ExportQueuePanel />
     </>
   );
 }
