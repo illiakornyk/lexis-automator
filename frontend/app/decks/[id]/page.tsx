@@ -4,7 +4,6 @@ import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft,
   Download,
   ImageIcon,
   Loader2,
@@ -138,13 +137,14 @@ export default function DeckDetailPage({
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-4xl mx-auto px-4 md:px-8 py-8 space-y-6">
-        <div className="flex items-center gap-3 flex-wrap">
-          <Link href="/decks">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-1.5 text-sm text-slate-500">
+          <Link href="/decks" className="hover:text-indigo-600 transition-colors">Decks</Link>
+          <span>›</span>
+          <span className="text-slate-800 font-medium truncate max-w-xs">{deck.name}</span>
+        </div>
 
+        <div className="flex items-center gap-3 flex-wrap">
           {isRenaming ? (
             <div className="flex items-center gap-2 flex-1">
               <Input
@@ -258,7 +258,7 @@ export default function DeckDetailPage({
                   <th className="text-left px-4 py-3 font-medium text-slate-600 hidden md:table-cell">
                     Example
                   </th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600 hidden lg:table-cell">
+                  <th className="text-left px-4 py-3 font-medium text-slate-600 hidden sm:table-cell">
                     Image
                   </th>
                   <th className="px-4 py-3"></th>
@@ -285,7 +285,7 @@ export default function DeckDetailPage({
                     <td className="px-4 py-3 text-slate-500 italic hidden md:table-cell max-w-xs">
                       <span className="line-clamp-2">{card.example || "—"}</span>
                     </td>
-                    <td className="px-4 py-3 hidden lg:table-cell">
+                    <td className="px-4 py-3 hidden sm:table-cell">
                       <button
                         className="rounded-md overflow-hidden border border-slate-200 hover:border-indigo-400 transition-colors"
                         onClick={() => openPicker(card.id)}

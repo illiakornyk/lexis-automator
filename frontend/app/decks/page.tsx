@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Library, Download, Trash2, Loader2 } from "lucide-react";
+import { Library, Download, Trash2, Loader2, Plus, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,11 +19,14 @@ import { toast } from "sonner";
 export default function DecksPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const { decks, isLoading, deleteDeck } = useDecks();
+  const { decks, isLoading, createDeck, deleteDeck } = useDecks();
   const { templates, isLoaded: templatesLoaded } = useTemplates();
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isCreating, setIsCreating] = useState(false);
+  const [newDeckName, setNewDeckName] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const newDeckInputRef = useRef<HTMLInputElement>(null);
   const [bulkTemplateIds, setBulkTemplateIds] = useState<string[]>(["default-recognition"]);
   const [bulkAccent, setBulkAccent] = useState("US");
   const [bulkGender, setBulkGender] = useState("FEMALE");
@@ -32,6 +36,21 @@ export default function DecksPage() {
     router.push("/login");
     return null;
   }
+
+  const startCreating = () => {
+    setNewDeckName("");
+    setIsCreating(true);
+    setTimeout(() => newDeckInputRef.current?.focus(), 0);
+  };
+
+  const confirmCreate = async () => {
+    if (!newDeckName.trim()) { setIsCreating(false); return; }
+    await createDeck(newDeckName);
+    setIsCreating(false);
+    setNewDeckName("");
+  };
+
+  const cancelCreate = () => { setIsCreating(false); setNewDeckName(""); };
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -93,9 +112,43 @@ export default function DecksPage() {
         <div className="flex items-center gap-3">
           <Library className="h-7 w-7 text-indigo-600" />
           <h1 className="text-2xl font-bold text-indigo-900">My Decks</h1>
-          <Badge variant="outline" className="ml-auto">
-            {decks.length}/15
-          </Badge>
+          <Badge variant="outline" className="ml-1">{decks.length}/15</Badge>
+
+          <div className="ml-auto flex items-center gap-2">
+            {isCreating ? (
+              <>
+                <Input
+                  ref={newDeckInputRef}
+                  value={newDeckName}
+                  onChange={(e) => setNewDeckName(e.target.value)}
+                  placeholder="Deck name..."
+                  className="w-44 h-8 text-sm"
+                  maxLength={50}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") confirmCreate();
+                    if (e.key === "Escape") cancelCreate();
+                  }}
+                />
+                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={confirmCreate}>
+                  <Check className="h-4 w-4 text-indigo-600" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={cancelCreate}>
+                  <X className="h-4 w-4 text-slate-400" />
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={startCreating}
+                disabled={decks.length >= 15}
+                className="gap-1.5"
+              >
+                <Plus className="h-4 w-4" />
+                New Deck
+              </Button>
+            )}
+          </div>
         </div>
 
         {decks.length === 0 ? (
@@ -103,11 +156,17 @@ export default function DecksPage() {
             <Library className="mx-auto h-12 w-12 text-slate-300 mb-4" />
             <h3 className="text-lg font-medium text-slate-600">No decks yet</h3>
             <p className="text-slate-500 mb-4">
-              Search for a word and save your first card.
+              Create an empty deck or search for a word to save your first card.
             </p>
-            <Link href="/">
-              <Button className="bg-indigo-600 hover:bg-indigo-700">Go to Search</Button>
-            </Link>
+            <div className="flex items-center justify-center gap-3">
+              <Button variant="outline" onClick={startCreating} className="gap-1.5">
+                <Plus className="h-4 w-4" />
+                New Deck
+              </Button>
+              <Link href="/">
+                <Button className="bg-indigo-600 hover:bg-indigo-700">Go to Search</Button>
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -124,9 +183,6 @@ export default function DecksPage() {
                       />
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-slate-800 truncate">{deck.name}</p>
-                        <p className="text-sm text-slate-500 mt-0.5">
-                          {deck.cardCount} card{deck.cardCount !== 1 ? "s" : ""}
-                        </p>
                       </div>
                       <Badge
                         variant="outline"
