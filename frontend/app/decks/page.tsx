@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Library, Download, Trash2, Loader2, Plus, Check, X } from "lucide-react";
+import { Library, Download, Trash2, Loader2, Plus, Check, X, LayoutTemplate, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -210,53 +210,95 @@ export default function DecksPage() {
       </div>
 
       {selectedIds.size >= 2 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-lg z-50">
-          <div className="max-w-4xl mx-auto flex flex-wrap items-center gap-4">
-            <span className="text-sm font-medium text-slate-600">
-              {selectedIds.size} decks selected
-            </span>
-            <div className="flex flex-wrap gap-3 items-center text-sm">
-              <span className="text-slate-500">Templates:</span>
-              {templatesLoaded &&
-                templates.slice(0, 4).map((t) => (
-                  <label key={t.id} className="flex items-center gap-1.5 cursor-pointer">
-                    <Checkbox
-                      checked={bulkTemplateIds.includes(t.id)}
-                      onCheckedChange={() => toggleBulkTemplate(t.id)}
-                    />
-                    <span className="text-slate-700">{t.name}</span>
-                  </label>
-                ))}
-              <Select value={bulkAccent} onValueChange={setBulkAccent}>
-                <SelectTrigger className="w-[110px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="US">American</SelectItem>
-                  <SelectItem value="GB">British</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={bulkGender} onValueChange={setBulkGender}>
-                <SelectTrigger className="w-[100px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="FEMALE">Female</SelectItem>
-                  <SelectItem value="MALE">Male</SelectItem>
-                </SelectContent>
-              </Select>
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-[0_-4px_24px_-8px_rgba(0,0,0,0.12)]">
+          <div className="max-w-4xl mx-auto px-6 py-4">
+
+            {/* Status row */}
+            <div className="flex items-center gap-2 mb-4">
+              <span className="bg-indigo-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                {selectedIds.size}
+              </span>
+              <span className="text-sm font-medium text-slate-700">
+                deck{selectedIds.size !== 1 ? "s" : ""} selected
+              </span>
             </div>
-            <Button
-              onClick={handleBulkDownload}
-              disabled={isExporting}
-              className="ml-auto bg-indigo-600 hover:bg-indigo-700"
-            >
-              {isExporting ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
-              ) : (
-                <><Download className="mr-2 h-4 w-4" /> Download {selectedIds.size} Decks as ZIP</>
-              )}
-            </Button>
+
+            {/* Three-zone row */}
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 sm:divide-x sm:divide-slate-200">
+
+              {/* Zone 1 — Templates */}
+              <div className="flex flex-col gap-2 sm:pr-6 sm:w-64 shrink-0">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                  <LayoutTemplate size={12} />
+                  Templates
+                </p>
+                <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+                  {templatesLoaded ? (
+                    templates.slice(0, 4).map((t) => (
+                      <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-600">
+                        <Checkbox
+                          checked={bulkTemplateIds.includes(t.id)}
+                          onCheckedChange={() => toggleBulkTemplate(t.id)}
+                        />
+                        {t.name}
+                      </label>
+                    ))
+                  ) : (
+                    <span className="text-slate-400 text-sm">Loading…</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Zone 2 — Voice */}
+              <div className="flex flex-col gap-2 sm:px-6 shrink-0">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                  <Volume2 size={12} />
+                  Voice
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <Select value={bulkAccent} onValueChange={setBulkAccent}>
+                    <SelectTrigger className="w-[120px] h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="US">🇺🇸 American</SelectItem>
+                      <SelectItem value="GB">🇬🇧 British</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={bulkGender} onValueChange={setBulkGender}>
+                    <SelectTrigger className="w-[105px] h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="FEMALE">♀ Female</SelectItem>
+                      <SelectItem value="MALE">♂ Male</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Zone 3 — Download */}
+              <div className="flex flex-col gap-2 sm:pl-6 flex-1">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                  <Download size={12} />
+                  Export
+                </p>
+                <div className="flex items-center">
+                  <Button
+                    onClick={handleBulkDownload}
+                    disabled={isExporting}
+                    className="bg-indigo-600 hover:bg-indigo-700 sm:ml-auto"
+                  >
+                    {isExporting ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating…</>
+                    ) : (
+                      <><Download className="mr-2 h-4 w-4" />Download {selectedIds.size} decks as ZIP</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+            </div>
           </div>
         </div>
       )}

@@ -23,7 +23,6 @@ interface ExportBarProps {
   isGeneratingAll: boolean;
   onDownload: () => void;
   onGenerateAllMissing: () => void;
-  // Deck props
   decks: Deck[];
   decksLoading: boolean;
   selectedDeckId: string | null;
@@ -59,68 +58,27 @@ export function ExportBar({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] z-50">
-      <div className="max-w-4xl mx-auto flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-slate-600">
-          <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-xs font-bold shrink-0">
-            {selectedCount} Selected
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-[0_-4px_24px_-8px_rgba(0,0,0,0.12)]">
+      <div className="max-w-4xl mx-auto px-6 py-4">
+
+        {/* Status row */}
+        <div className="flex items-center gap-2 mb-4">
+          <span className="bg-indigo-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+            {selectedCount}
           </span>
-          <span className="hidden sm:inline text-slate-400">|</span>
-          <span className="hidden sm:inline">TTS:</span>
-          <Select value={accent} onValueChange={onAccentChange}>
-            <SelectTrigger className="w-[110px] h-9">
-              <SelectValue placeholder="Accent" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="US">American</SelectItem>
-              <SelectItem value="GB">British</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={gender} onValueChange={onGenderChange}>
-            <SelectTrigger className="w-[100px] h-9">
-              <SelectValue placeholder="Gender" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="FEMALE">Female</SelectItem>
-              <SelectItem value="MALE">Male</SelectItem>
-            </SelectContent>
-          </Select>
+          <span className="text-sm font-medium text-slate-700">
+            definition{selectedCount !== 1 ? "s" : ""} selected
+          </span>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-4 text-sm">
-            <span className="text-slate-500 font-medium">Templates:</span>
-            {isLoaded ? (
-              templates.map((t) => (
-                <label key={t.id} className="flex items-center gap-1.5 cursor-pointer">
-                  <Checkbox
-                    checked={selectedTemplateIds.includes(t.id)}
-                    onCheckedChange={() => onTemplateToggle(t.id)}
-                  />
-                  <span className="text-slate-700">{t.name}</span>
-                </label>
-              ))
-            ) : (
-              <span className="text-slate-400 text-sm">Loading templates...</span>
-            )}
-          </div>
+        {/* Two-zone row */}
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 sm:divide-x sm:divide-slate-200">
 
-          <div className="flex flex-wrap gap-2 w-full md:w-auto items-center">
-            {missingExamplesCount > 0 && (
-              <Button
-                onClick={onGenerateAllMissing}
-                disabled={isGeneratingAll || isExporting}
-                variant="outline"
-                className="flex-1 md:flex-none h-10 px-4 border-amber-300 text-amber-700 hover:bg-amber-50"
-              >
-                {isGeneratingAll ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating {missingExamplesCount}...</>
-                ) : (
-                  <><Sparkles className="mr-2 h-4 w-4" /> Generate {missingExamplesCount} Missing</>
-                )}
-              </Button>
-            )}
-
+          {/* Zone 1 — Save to Deck */}
+          <div className="flex flex-col gap-2 sm:pr-6 sm:w-64 shrink-0">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+              Save to deck
+            </p>
             <div className="flex items-center gap-2">
               <DeckCombobox
                 decks={decks}
@@ -132,29 +90,98 @@ export function ExportBar({
               <Button
                 onClick={onSaveToDeck}
                 disabled={isSaving || !selectedDeckId}
+                size="sm"
                 variant="outline"
-                className="h-10 px-4 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                className="shrink-0 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
               >
                 {isSaving ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <><BookmarkPlus className="mr-2 h-4 w-4" /> Add to Deck</>
+                  <BookmarkPlus className="h-4 w-4" />
                 )}
               </Button>
             </div>
-
-            <Button
-              onClick={onDownload}
-              disabled={isExporting || isGeneratingAll}
-              className="flex-1 md:flex-none h-10 px-8 bg-indigo-600 hover:bg-indigo-700 shadow-md"
-            >
-              {isExporting ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
-              ) : (
-                <><Download className="mr-2 h-4 w-4" /> Download Anki Deck</>
-              )}
-            </Button>
           </div>
+
+          {/* Zone 2 — Export .apkg */}
+          <div className="flex flex-col gap-3 sm:pl-6 flex-1">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+              Export as Anki deck
+            </p>
+
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              {/* Templates */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                {isLoaded ? (
+                  templates.map((t) => (
+                    <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-600">
+                      <Checkbox
+                        checked={selectedTemplateIds.includes(t.id)}
+                        onCheckedChange={() => onTemplateToggle(t.id)}
+                      />
+                      {t.name}
+                    </label>
+                  ))
+                ) : (
+                  <span className="text-slate-400 text-sm">Loading…</span>
+                )}
+              </div>
+
+              {/* TTS */}
+              <div className="flex items-center gap-1.5">
+                <Select value={accent} onValueChange={onAccentChange}>
+                  <SelectTrigger className="w-[100px] h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="US">American</SelectItem>
+                    <SelectItem value="GB">British</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={gender} onValueChange={onGenderChange}>
+                  <SelectTrigger className="w-[90px] h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="FEMALE">Female</SelectItem>
+                    <SelectItem value="MALE">Male</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-wrap items-center gap-2">
+              {missingExamplesCount > 0 && (
+                <Button
+                  onClick={onGenerateAllMissing}
+                  disabled={isGeneratingAll || isExporting}
+                  variant="outline"
+                  size="sm"
+                  className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                >
+                  {isGeneratingAll ? (
+                    <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Generating {missingExamplesCount}…</>
+                  ) : (
+                    <><Sparkles className="mr-1.5 h-3.5 w-3.5" />Generate {missingExamplesCount} missing</>
+                  )}
+                </Button>
+              )}
+              <Button
+                onClick={onDownload}
+                disabled={isExporting || isGeneratingAll}
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-700 ml-auto"
+              >
+                {isExporting ? (
+                  <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Generating…</>
+                ) : (
+                  <><Download className="mr-1.5 h-3.5 w-3.5" />Download .apkg</>
+                )}
+              </Button>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

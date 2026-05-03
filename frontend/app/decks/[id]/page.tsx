@@ -6,9 +6,11 @@ import Link from "next/link";
 import {
   Download,
   ImageIcon,
+  LayoutTemplate,
   Loader2,
   Pencil,
   Trash2,
+  Volume2,
   X,
   Check,
 } from "lucide-react";
@@ -191,47 +193,86 @@ export default function DeckDetailPage({
           </Button>
         </div>
 
-        <div className="bg-white border rounded-xl p-4 flex flex-wrap items-center gap-4">
-          <span className="text-sm font-medium text-slate-600">Templates:</span>
-          {templatesLoaded &&
-            templates.map((t) => (
-              <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm">
-                <Checkbox
-                  checked={selectedTemplateIds.includes(t.id)}
-                  onCheckedChange={() => toggleTemplate(t.id)}
-                />
-                <span className="text-slate-700">{t.name}</span>
-              </label>
-            ))}
-          <Select value={accent} onValueChange={setAccent}>
-            <SelectTrigger className="w-[110px] h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="US">American</SelectItem>
-              <SelectItem value="GB">British</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={gender} onValueChange={setGender}>
-            <SelectTrigger className="w-[100px] h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="FEMALE">Female</SelectItem>
-              <SelectItem value="MALE">Male</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            onClick={handleDownload}
-            disabled={isExporting || cards.length === 0}
-            className="ml-auto bg-indigo-600 hover:bg-indigo-700"
-          >
-            {isExporting ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
-            ) : (
-              <><Download className="mr-2 h-4 w-4" /> Download .apkg</>
-            )}
-          </Button>
+        <div className="bg-white border rounded-xl px-6 py-4">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 sm:divide-x sm:divide-slate-200">
+
+            {/* Zone 1 — Templates */}
+            <div className="flex flex-col gap-2 sm:pr-6 sm:w-[30%] min-w-0">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                <LayoutTemplate size={12} />
+                Templates
+              </p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                {templatesLoaded ? (
+                  templates.map((t) => (
+                    <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-600">
+                      <Checkbox
+                        checked={selectedTemplateIds.includes(t.id)}
+                        onCheckedChange={() => toggleTemplate(t.id)}
+                      />
+                      {t.name}
+                    </label>
+                  ))
+                ) : (
+                  <span className="text-slate-400 text-sm">Loading…</span>
+                )}
+              </div>
+            </div>
+
+            {/* Zone 2 — Voice */}
+            <div className="flex flex-col gap-2 sm:px-6 sm:w-[45%]">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                <Volume2 size={12} />
+                Voice
+              </p>
+              <div className="flex items-center gap-1.5">
+                <div className="flex-1">
+                  <Select value={accent} onValueChange={setAccent}>
+                    <SelectTrigger className="w-full h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="US">🇺🇸 American</SelectItem>
+                      <SelectItem value="GB">🇬🇧 British</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1">
+                  <Select value={gender} onValueChange={setGender}>
+                    <SelectTrigger className="w-full h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="FEMALE">♀ Female</SelectItem>
+                      <SelectItem value="MALE">♂ Male</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Zone 3 — Export */}
+            <div className="flex flex-col gap-2 sm:pl-6 sm:w-[25%]">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                <Download size={12} />
+                Export
+              </p>
+              <div>
+                <Button
+                  onClick={handleDownload}
+                  disabled={isExporting || cards.length === 0}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700"
+                >
+                  {isExporting ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating…</>
+                  ) : (
+                    <><Download className="mr-2 h-4 w-4" />Download .apkg</>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+          </div>
         </div>
 
         {cardsLoading ? (

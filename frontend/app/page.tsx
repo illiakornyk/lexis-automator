@@ -1,10 +1,10 @@
 "use client";
 
-import { BookOpen } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { BookOpen, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Meaning } from "@/lib/types";
 import { getPosBadgeColor } from "@/lib/utils/dictionary";
 
 import { SearchHeader } from "@/components/SearchHeader";
@@ -14,6 +14,17 @@ import { ExportBar } from "@/components/ExportBar";
 import { useLexisAutomator } from "@/hooks/useLexisAutomator";
 
 export default function LexisAutomatorUI() {
+  const [collapsedPos, setCollapsedPos] = useState<Set<string>>(new Set());
+
+  const toggleCollapse = (pos: string) => {
+    setCollapsedPos((prev) => {
+      const next = new Set(prev);
+      if (next.has(pos)) next.delete(pos);
+      else next.add(pos);
+      return next;
+    });
+  };
+
   const {
     searchQuery,
     setSearchQuery,
@@ -45,6 +56,23 @@ export default function LexisAutomatorUI() {
     createDeck,
     handleSaveToDeck,
   } = useLexisAutomator();
+
+  const groupedMeanings = useMemo(() => {
+    if (!wordData) return new Map<string, Array<{ def: { definition: string; example?: string }; defId: string; mIdx: number; dIdx: number }>>();
+    const map = new Map<string, Array<{ def: { definition: string; example?: string }; defId: string; mIdx: number; dIdx: number }>>();
+    wordData.meanings.forEach((meaning, mIdx) => {
+      const pos = meaning.partOfSpeech;
+      if (!map.has(pos)) map.set(pos, []);
+      meaning.definitions.forEach((def, dIdx) => {
+        map.get(pos)!.push({ def, defId: `${pos}-${mIdx}-${dIdx}`, mIdx, dIdx });
+      });
+    });
+    return map;
+  }, [wordData]);
+
+  useEffect(() => {
+    setCollapsedPos(new Set());
+  }, [wordData?.word]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-32">
@@ -83,34 +111,40 @@ export default function LexisAutomatorUI() {
             <WordHeader word={wordData.word} phonetics={wordData.phonetics} />
 
             <div className="space-y-8">
-              {wordData.meanings.map((meaning: Meaning, mIdx: number) => (
-                <section key={`meaning-${mIdx}`}>
-                  <div className="flex items-center gap-3 mb-4">
-                    <Badge variant="outline" className={`text-sm px-3 py-1 shadow-none ${getPosBadgeColor(meaning.partOfSpeech)}`}>
-                      {meaning.partOfSpeech}
-                    </Badge>
-                    <Separator className="flex-1" />
-                  </div>
+              {Array.from(groupedMeanings.entries()).map(([pos, items]) => {
+                const isCollapsed = collapsedPos.has(pos);
+                return (
+                  <section key={pos}>
+                    <button
+                      className="flex items-center gap-3 mb-4 w-full text-left group"
+                      onClick={() => toggleCollapse(pos)}
+                    >
+                      <Badge variant="outline" className={`text-sm px-3 py-1 shadow-none ${getPosBadgeColor(pos)}`}>
+                        {pos}
+                      </Badge>
+                      <Separator className="flex-1" />
+                      <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isCollapsed ? "-rotate-90" : ""}`} />
+                    </button>
 
-                  <div className="grid gap-4">
-                    {meaning.definitions.map((def, dIdx: number) => {
-                      const defId = `${meaning.partOfSpeech}-${mIdx}-${dIdx}`;
-                      return (
-                        <DefinitionCard
-                          key={defId}
-                          defId={defId}
-                          definition={def.definition}
-                          example={def.example}
-                          isSelected={selectedDefs.includes(defId)}
-                          isGenerating={!!generatingExamples[defId]}
-                          onToggleSelection={toggleSelection}
-                          onGenerateExample={() => handleGenerateExample(defId, mIdx, dIdx, def.definition)}
-                        />
-                      );
-                    })}
-                  </div>
-                </section>
-              ))}
+                    {!isCollapsed && (
+                      <div className="grid gap-4">
+                        {items.map(({ def, defId, mIdx, dIdx }) => (
+                          <DefinitionCard
+                            key={defId}
+                            defId={defId}
+                            definition={def.definition}
+                            example={def.example}
+                            isSelected={selectedDefs.includes(defId)}
+                            isGenerating={!!generatingExamples[defId]}
+                            onToggleSelection={toggleSelection}
+                            onGenerateExample={() => handleGenerateExample(defId, mIdx, dIdx, def.definition)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
             </div>
           </>
         )}
