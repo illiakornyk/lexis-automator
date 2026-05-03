@@ -39,7 +39,7 @@ export function DefinitionCard({
             id={`check-${defId}`}
             checked={isSelected}
             onCheckedChange={() => onToggleSelection(defId)}
-            className="mt-1 border-stone-400 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+            className="mt-1 h-5 w-5 border-stone-400 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
             onClick={(e) => e.stopPropagation()}
           />
           <div className="grid gap-1.5 flex-1">

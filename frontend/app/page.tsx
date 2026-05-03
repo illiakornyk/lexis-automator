@@ -28,6 +28,7 @@ export default function LexisAutomatorUI() {
   const {
     searchQuery,
     setSearchQuery,
+    submittedQuery,
     wordData,
     isLoading,
     selectedDefs,
@@ -44,6 +45,7 @@ export default function LexisAutomatorUI() {
     isGeneratingAll,
     missingExamplesCount,
     toggleSelection,
+    clearSelection,
     handleSearch,
     handleGenerateExample,
     handleGenerateAllMissing,
@@ -100,15 +102,35 @@ export default function LexisAutomatorUI() {
         {!isLoading && !wordData && (
           <div className="text-center py-20 bg-stone-100/80 rounded-2xl border border-dashed border-stone-300">
             <BookOpen className="mx-auto h-12 w-12 text-stone-400 mb-4" />
-            <h3 className="text-lg font-medium text-stone-500">No Word Selected</h3>
-            <p className="text-stone-400">Search for a word above to see its definitions.</p>
+            {submittedQuery ? (
+              <>
+                <h3 className="text-lg font-medium text-stone-600">Word Not Found</h3>
+                <p className="text-stone-500 mt-2">No definitions found for <span className="font-medium">"{submittedQuery}"</span></p>
+                <p className="text-sm text-stone-400 mt-4">Try searching for another word or check the spelling.</p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-medium text-stone-500">No Word Selected</h3>
+                <p className="text-stone-400">Search for a word above to see its definitions.</p>
+              </>
+            )}
           </div>
         )}
 
         {/* Results */}
         {!isLoading && wordData && (
           <>
-            <WordHeader word={wordData.word} phonetics={wordData.phonetics} />
+            <div className="flex items-start justify-between gap-4">
+              <WordHeader word={wordData.word} phonetics={wordData.phonetics} />
+              {selectedDefs.length > 0 && (
+                <button
+                  onClick={clearSelection}
+                  className="shrink-0 mt-2 text-sm text-stone-400 hover:text-stone-600 underline underline-offset-2 transition-colors"
+                >
+                  Unselect all ({selectedDefs.length})
+                </button>
+              )}
+            </div>
 
             <div className="space-y-8">
               {Array.from(groupedMeanings.entries()).map(([pos, items]) => {
