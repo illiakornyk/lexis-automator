@@ -133,7 +133,7 @@ export function ExportBar({
             </p>
             <div className="flex items-center gap-1.5">
               <Select value={accent} onValueChange={onAccentChange}>
-                <SelectTrigger className="w-[110px] h-8 text-sm border-stone-300 bg-white text-stone-700">
+                <SelectTrigger className="flex-1 h-9 text-sm border-stone-300 bg-white text-stone-700">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -142,7 +142,7 @@ export function ExportBar({
                 </SelectContent>
               </Select>
               <Select value={gender} onValueChange={onGenderChange}>
-                <SelectTrigger className="w-[100px] h-8 text-sm border-stone-300 bg-white text-stone-700">
+                <SelectTrigger className="flex-1 h-9 text-sm border-stone-300 bg-white text-stone-700">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -153,36 +153,33 @@ export function ExportBar({
             </div>
 
             {/* Actions */}
-            <div className="flex flex-wrap items-center gap-2 mt-auto">
-              {missingExamplesCount > 0 && (
-                <Button
-                  onClick={onGenerateAllMissing}
-                  disabled={isGeneratingAll || isExporting}
-                  variant="outline"
-                  size="sm"
-                  className="border-amber-300 text-amber-700 hover:bg-amber-50"
-                >
-                  {isGeneratingAll ? (
-                    <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Generating {missingExamplesCount}…</>
-                  ) : (
-                    <><Sparkles className="mr-1.5 h-3.5 w-3.5" />Generate {missingExamplesCount} missing</>
-                  )}
-                </Button>
-              )}
+            {missingExamplesCount > 0 && (
               <Button
-                onClick={onDownload}
-                disabled={isExporting || isGeneratingAll || selectedTemplateIds.length === 0 || !selectedDeckId}
+                onClick={onGenerateAllMissing}
+                disabled={isGeneratingAll || isExporting}
+                variant="outline"
                 size="sm"
-                className="bg-amber-500 hover:bg-amber-400 text-white font-medium ml-auto"
-                title={!selectedDeckId ? "Select a deck first" : undefined}
+                className="w-full border-amber-300 text-amber-700 hover:bg-amber-50"
               >
-                {isExporting ? (
-                  <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Exporting…</>
+                {isGeneratingAll ? (
+                  <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Generating {missingExamplesCount}…</>
                 ) : (
-                  <><ListPlus className="mr-1.5 h-3.5 w-3.5" />Export to Anki</>
+                  <><Sparkles className="mr-1.5 h-3.5 w-3.5" />Generate {missingExamplesCount} missing</>
                 )}
               </Button>
-            </div>
+            )}
+            <Button
+              onClick={onDownload}
+              disabled={isExporting || isGeneratingAll || selectedTemplateIds.length === 0 || !selectedDeckId}
+              className="w-full h-11 bg-amber-500 hover:bg-amber-400 text-white font-medium"
+              title={!selectedDeckId ? "Select a deck first" : undefined}
+            >
+              {isExporting ? (
+                <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />Exporting…</>
+              ) : (
+                <><ListPlus className="mr-1.5 h-4 w-4" />Export to Anki</>
+              )}
+            </Button>
           </div>
 
         </div>
