@@ -66,12 +66,16 @@ export function useExportJobs() {
   const download = useCallback(async (jobId: string, deckName: string) => {
     try {
       const url = await LexisApi.getExportJobDownloadUrl(jobId);
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
+      a.href = objectUrl;
       a.download = `${deckName.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.apkg`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      URL.revokeObjectURL(objectUrl);
     } catch (err: any) {
       toast.error(err.message || "Failed to get download link");
     }
