@@ -127,9 +127,9 @@ export function ExportBar({
           </div>
 
           {/* Zone 3 — Voice + Export */}
-          <div className="flex flex-col gap-2 sm:pl-6 flex-1">
+          <div className="flex flex-col gap-2 sm:pl-6 sm:min-w-[340px] flex-1">
             <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide">
-              Voice
+              Voice and examples
             </p>
             <div className="flex items-center gap-1.5">
               <Select value={accent} onValueChange={onAccentChange}>
@@ -146,27 +146,32 @@ export function ExportBar({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="FEMALE">Female</SelectItem>
-                  <SelectItem value="MALE">Male</SelectItem>
+                  <SelectItem value="FEMALE">♀ Female</SelectItem>
+                  <SelectItem value="MALE">♂ Male</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* Actions */}
             {missingExamplesCount > 0 && (
-              <Button
-                onClick={onGenerateAllMissing}
-                disabled={isGeneratingAll || isExporting}
-                variant="outline"
-                size="sm"
-                className="w-full border-amber-300 text-amber-700 hover:bg-amber-50"
-              >
-                {isGeneratingAll ? (
-                  <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Generating {missingExamplesCount}…</>
-                ) : (
-                  <><Sparkles className="mr-1.5 h-3.5 w-3.5" />Generate {missingExamplesCount} missing</>
-                )}
-              </Button>
+              <div className="flex flex-col gap-1">
+                <p className="text-xs text-stone-400">
+                  AI-generate missing example sentences for selected cards
+                </p>
+                <Button
+                  onClick={onGenerateAllMissing}
+                  disabled={isGeneratingAll || isExporting}
+                  variant="outline"
+                  size="sm"
+                  className="w-full border-amber-300 text-amber-700 hover:bg-amber-50"
+                >
+                  {isGeneratingAll ? (
+                    <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Generating {missingExamplesCount}…</>
+                  ) : (
+                    <><Sparkles className="mr-1.5 h-3.5 w-3.5" />Generate {missingExamplesCount} missing</>
+                  )}
+                </Button>
+              </div>
             )}
             <Button
               onClick={onDownload}

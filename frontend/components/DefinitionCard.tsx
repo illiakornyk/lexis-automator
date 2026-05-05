@@ -56,8 +56,8 @@ export function DefinitionCard({
             &quot;{example}&quot;
           </div>
         ) : (
-          <div className="bg-stone-50 border border-stone-300 border-dashed rounded-md p-3 text-sm text-stone-400 mb-3">
-            No example sentence found in dictionary.
+          <div className="bg-stone-100/60 border border-stone-200 rounded-md p-3 text-sm text-stone-300 mb-3 italic select-none">
+            No dictionary example
           </div>
         )}
 
