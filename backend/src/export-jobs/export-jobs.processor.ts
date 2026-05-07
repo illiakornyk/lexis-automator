@@ -4,6 +4,7 @@ import { Job } from 'bullmq';
 import * as fs from 'fs/promises';
 import { ExportJobsService, EXPORT_JOBS_QUEUE } from './export-jobs.service';
 import { ExportService } from '../export/export.service';
+import { Accent, Gender } from '../tts/dto/generate-tts.dto';
 
 @Processor(EXPORT_JOBS_QUEUE, { concurrency: 2 })
 export class ExportJobsProcessor extends WorkerHost {
@@ -27,6 +28,11 @@ export class ExportJobsProcessor extends WorkerHost {
       return;
     }
 
+    if (!exportJob.deck_id) {
+      await this.exportJobsService.markFailed(jobId, 'Job has no deck_id');
+      return;
+    }
+
     let cleanup: (() => Promise<void>) | null = null;
 
     try {
@@ -34,7 +40,7 @@ export class ExportJobsProcessor extends WorkerHost {
         exportJob.deck_id,
         exportJob.user_id,
         exportJob.template_ids,
-        { accent: exportJob.accent, gender: exportJob.gender },
+        { accent: exportJob.accent as Accent, gender: exportJob.gender as Gender },
       );
       cleanup = result.cleanup;
 

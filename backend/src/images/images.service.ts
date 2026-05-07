@@ -6,6 +6,7 @@ import {
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '../types/database.types';
 import { firstValueFrom } from 'rxjs';
 import * as path from 'path';
 
@@ -28,14 +29,14 @@ function extFromContentType(ct: string): string {
 @Injectable()
 export class ImagesService {
   private readonly logger = new Logger(ImagesService.name);
-  private readonly supabase: SupabaseClient;
+  private readonly supabase: SupabaseClient<Database>;
   private readonly pixabayKey: string;
 
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-    this.supabase = createClient(
+    this.supabase = createClient<Database>(
       this.configService.getOrThrow('SUPABASE_URL'),
       this.configService.getOrThrow('SUPABASE_SERVICE_ROLE_KEY'),
     );

@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '../../types/database.types';
 
 type FieldType = 'Word' | 'PartOfSpeech' | 'Phonetic' | 'Definition' | 'Example' | 'Audio' | 'Image' | 'TypeIn' | 'Cloze';
 
@@ -74,7 +75,7 @@ function compileRaw(raw: TemplateRaw): CompiledTemplate {
 
 export async function resolveAndCompileTemplates(
   templateIds: string[],
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
 ): Promise<CompiledTemplate[]> {
   const resultMap = new Map<string, CompiledTemplate>();
 

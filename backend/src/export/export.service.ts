@@ -1,6 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '../types/database.types';
 import { ExportAnkiDto, CardDataDto, TtsSettingsDto } from './dto/export-anki.dto';
 import { ExportDeckDto } from './dto/export-deck.dto';
 import { ExportDecksArchiveDto } from './dto/export-decks-archive.dto';
@@ -29,20 +30,20 @@ interface DeckExportResult {
 @Injectable()
 export class ExportService {
   private readonly logger = new Logger(ExportService.name);
-  private readonly supabase: SupabaseClient;
+  private readonly supabase: SupabaseClient<Database>;
 
   constructor(
     private readonly httpService: HttpService,
     private readonly ttsService: TtsService,
     private readonly imagesService: ImagesService,
   ) {
-    this.supabase = createClient(
+    this.supabase = createClient<Database>(
       process.env.SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
   }
 
-  private mapRawCard(c: any): MappedCard {
+  private mapRawCard(c: Database['public']['Tables']['saved_cards']['Row']): MappedCard {
     return {
       word: c.word,
       partOfSpeech: c.part_of_speech,

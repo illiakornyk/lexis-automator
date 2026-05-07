@@ -8,6 +8,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '../types/database.types';
 import { CreateExportJobsDto } from './dto/create-export-jobs.dto';
 
 export const EXPORT_JOBS_QUEUE = 'export-jobs';
@@ -16,12 +17,12 @@ export const MAX_DONE_SLOTS = 5;
 @Injectable()
 export class ExportJobsService {
   private readonly logger = new Logger(ExportJobsService.name);
-  private readonly supabase: SupabaseClient;
+  private readonly supabase: SupabaseClient<Database>;
 
   constructor(
     @InjectQueue(EXPORT_JOBS_QUEUE) private readonly queue: Queue,
   ) {
-    this.supabase = createClient(
+    this.supabase = createClient<Database>(
       process.env.SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
@@ -40,7 +41,7 @@ export class ExportJobsService {
       );
     }
 
-    const created: any[] = [];
+    const created: Database['public']['Tables']['export_jobs']['Row'][] = [];
 
     for (const deckId of dto.deckIds) {
       const { data: deck } = await this.supabase
