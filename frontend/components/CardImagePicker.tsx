@@ -64,8 +64,8 @@ export function CardImagePicker({
       onImageSaved(imagePath);
       onOpenChange(false);
       toast.success("Image saved.");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save image.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to save image.");
     } finally {
       setIsSaving(false);
     }
@@ -84,8 +84,8 @@ export function CardImagePicker({
       onImageSaved(imagePath);
       onOpenChange(false);
       toast.success("Image uploaded.");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to upload image.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload image.");
     } finally {
       setIsSaving(false);
     }

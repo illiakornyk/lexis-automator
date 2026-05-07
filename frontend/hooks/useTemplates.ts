@@ -168,8 +168,9 @@ export function useTemplates() {
             if (data) {
                 setTemplates(prev => prev.map(t => t.id === template.id ? mapDbToTemplate(data) : t));
             }
-        } catch (error: any) {
-            toast.error("Failed to save template to cloud");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "Failed to save template to cloud";
+            toast.error(message);
             console.error(error);
             // Revert optimistic update
             setTemplates(templates);
@@ -201,8 +202,9 @@ export function useTemplates() {
                 .eq('user_id', user.id);
 
             if (error) throw error;
-        } catch (error: any) {
-            toast.error("Failed to update template in cloud");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "Failed to update template in cloud";
+            toast.error(message);
             console.error(error);
             // Revert optimistic update
             setTemplates(templates);
@@ -229,8 +231,9 @@ export function useTemplates() {
                 .eq('user_id', user.id);
 
             if (error) throw error;
-        } catch (error: any) {
-            toast.error("Failed to delete template from cloud");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "Failed to delete template from cloud";
+            toast.error(message);
             console.error(error);
             // Revert optimistic update
             setTemplates(templates);

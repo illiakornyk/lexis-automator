@@ -89,8 +89,8 @@ export function useLexisAutomator() {
       } else {
         toast.error("No definitions found for this word.");
       }
-    } catch (error: any) {
-      toast.error(error.message || "Failed to fetch word definition.");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to fetch word definition.");
     } finally {
       setIsLoading(false);
     }
@@ -107,8 +107,8 @@ export function useLexisAutomator() {
       const res = await LexisApi.generateExample(wordData!.word, definitionStr, profile.openai_api_key);
       updateExample(mIdx, dIdx, res.example);
       toast.success("AI Example generated successfully!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to generate example.");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to generate example.");
     } finally {
       setGeneratingExamples((prev) => ({ ...prev, [defId]: false }));
     }
@@ -140,7 +140,7 @@ export function useLexisAutomator() {
         const res = await LexisApi.generateExample(wordData.word, item.definition, profile.openai_api_key);
         updateExample(item.mIdx, item.dIdx, res.example);
         successCount++;
-      } catch (error: any) {
+      } catch {
         toast.error(`Failed to generate example for: "${item.definition.slice(0, 40)}..."`);
       } finally {
         setGeneratingExamples((prev) => ({ ...prev, [item.defId]: false }));
@@ -232,8 +232,8 @@ export function useLexisAutomator() {
       URL.revokeObjectURL(url);
 
       toast.success("Anki deck downloaded successfully!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to export Anki deck.");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to export Anki deck.");
     } finally {
       setIsExporting(false);
     }

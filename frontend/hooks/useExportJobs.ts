@@ -53,8 +53,8 @@ export function useExportJobs() {
         const created = await LexisApi.createExportJobs(payload);
         setJobs((prev) => [...created, ...prev]);
         return created;
-      } catch (err: any) {
-        toast.error(err.message || "Failed to queue export");
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "Failed to queue export");
         return [];
       } finally {
         setIsLoading(false);
@@ -76,8 +76,8 @@ export function useExportJobs() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(objectUrl);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to get download link");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to get download link");
     }
   }, []);
 
@@ -85,8 +85,8 @@ export function useExportJobs() {
     try {
       await LexisApi.deleteExportJob(jobId);
       setJobs((prev) => prev.filter((j) => j.id !== jobId));
-    } catch (err: any) {
-      toast.error(err.message || "Failed to remove job");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove job");
     }
   }, []);
 
