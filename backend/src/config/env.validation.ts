@@ -40,13 +40,16 @@ class EnvironmentVariables {
   @IsString()
   PIXABAY_API_KEY: string;
 
-  // OpenRouter / AI
+  // LLM provider
+  @IsEnum(['openrouter', 'openai', 'gemini', 'anthropic'])
+  LLM_PROVIDER: string;
+
   @IsString()
-  OPENROUTER_API_KEY: string;
+  LLM_API_KEY: string;
 
   @IsString()
   @IsOptional()
-  OPENROUTER_MODEL: string;
+  LLM_MODEL: string;
 
   // Python anki-exporter sidecar (optional — defaults to localhost:8000)
   @IsUrl({ require_tld: false })

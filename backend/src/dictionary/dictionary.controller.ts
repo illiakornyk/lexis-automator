@@ -53,6 +53,7 @@ export class DictionaryController {
       dto.word,
       dto.definition,
       dto.apiKey,
+      dto.provider,
     );
     return { example: sentence };
   }
