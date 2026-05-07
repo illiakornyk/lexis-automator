@@ -4,8 +4,103 @@ import re
 import genanki
 from schemas import DeckRequest
 
-CARD_CSS = '.card { font-family: arial; font-size: 20px; text-align: center; color: black; background-color: white; }'
-CLOZE_CSS = CARD_CSS + ' .cloze { font-weight: bold; color: blue; }'
+CARD_CSS = """
+.card {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  font-size: 17px;
+  color: #1c1917;
+  background-color: #fafaf9;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 20px 24px;
+  line-height: 1.5;
+}
+
+.lx-word {
+  font-size: 32px;
+  font-weight: 700;
+  text-align: center;
+  color: #1c1917;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.lx-meta {
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.lx-pos {
+  display: inline-block;
+  font-size: 12px;
+  font-style: italic;
+  color: #78716c;
+  background: #f5f5f4;
+  border: 1px solid #e7e5e4;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  margin-right: 4px;
+}
+
+.lx-phonetic {
+  font-size: 14px;
+  color: #a8a29e;
+  letter-spacing: 0.5px;
+}
+
+.lx-definition {
+  font-size: 16px;
+  color: #292524;
+  margin: 14px 0;
+  padding: 12px 14px;
+  background: #ffffff;
+  border-left: 3px solid #f59e0b;
+  border-radius: 0 6px 6px 0;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.lx-example {
+  font-size: 15px;
+  font-style: italic;
+  color: #57534e;
+  background: #f5f5f4;
+  border: 1px solid #e7e5e4;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin: 10px 0;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.lx-audio {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.lx-image {
+  text-align: center;
+  margin-top: 12px;
+}
+
+.lx-typein {
+  text-align: center;
+  margin-top: 14px;
+}
+
+hr#answer {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid #e7e5e4;
+}
+"""
+
+CLOZE_CSS = CARD_CSS + """
+.cloze {
+  font-weight: bold;
+  color: #f59e0b;
+}
+"""
 
 # Maps Anki field names to how to extract their value from a CardData + extra dict
 FIELD_VALUE_MAP = {

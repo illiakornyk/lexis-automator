@@ -1,14 +1,14 @@
 import { CustomTemplate, FieldType } from '@/hooks/useTemplates';
 
 const FIELD_SNIPPETS: Record<FieldType, string> = {
-  Word: '<div style="text-align:center; font-size: 24px; font-weight: bold;">{{Word}}</div>',
-  PartOfSpeech: '<span style="color: gray; padding-right: 8px;">{{PartOfSpeech}}</span>',
-  Phonetic: '<span style="color: gray;">{{Phonetic}}</span>',
-  Definition: '<div style="text-align:left; font-size: 18px; margin-top: 12px; margin-bottom: 12px;"><b>Definition:</b> {{Definition}}</div>',
-  Example: '<div style="text-align:left; font-style: italic; color: #555; margin-top: 12px; margin-bottom: 12px;">"{{Example}}"</div>',
-  Audio: '<div style="margin-top: 16px;">{{Audio}}</div>',
-  Image: '<div style="margin-top: 12px; text-align: center;">{{#Image}}{{Image}}{{/Image}}</div>',
-  TypeIn: '<div style="margin-top: 16px;">{{type:Word}}</div>',
+  Word: '<div class="lx-word">{{Word}}</div>',
+  PartOfSpeech: '<div class="lx-meta"><span class="lx-pos">{{PartOfSpeech}}</span></div>',
+  Phonetic: '<div class="lx-meta"><span class="lx-phonetic">{{Phonetic}}</span></div>',
+  Definition: '<div class="lx-definition"><b>Definition:</b> {{Definition}}</div>',
+  Example: '<div class="lx-example">&ldquo;{{Example}}&rdquo;</div>',
+  Audio: '<div class="lx-audio">{{Audio}}</div>',
+  Image: '<div class="lx-image">{{#Image}}{{Image}}{{/Image}}</div>',
+  TypeIn: '<div class="lx-typein">{{type:Word}}</div>',
   Cloze: '{{cloze:Text}}',
 };
 

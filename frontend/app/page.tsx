@@ -12,8 +12,10 @@ import { WordHeader } from "@/components/WordHeader";
 import { DefinitionCard } from "@/components/DefinitionCard";
 import { ExportBar } from "@/components/ExportBar";
 import { useLexisAutomator } from "@/hooks/useLexisAutomator";
+import { useExportJobsContext } from "@/contexts/ExportJobsContext";
 
 export default function LexisAutomatorUI() {
+  const { enqueue } = useExportJobsContext();
   const [collapsedPos, setCollapsedPos] = useState<Set<string>>(new Set());
 
   const toggleCollapse = (pos: string) => {
@@ -28,6 +30,7 @@ export default function LexisAutomatorUI() {
   const {
     searchQuery,
     setSearchQuery,
+    submittedQuery,
     wordData,
     isLoading,
     selectedDefs,
@@ -44,6 +47,8 @@ export default function LexisAutomatorUI() {
     isGeneratingAll,
     missingExamplesCount,
     toggleSelection,
+    clearSelection,
+    handleQueueExport,
     handleSearch,
     handleGenerateExample,
     handleGenerateAllMissing,
@@ -75,11 +80,11 @@ export default function LexisAutomatorUI() {
   }, [wordData?.word]);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-32">
+    <div className="min-h-screen bg-stone-50 text-stone-900 pb-32">
       <SearchHeader
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
-        onSearch={handleSearch}
+        onSearch={() => handleSearch()}
         isLoading={isLoading}
       />
 
@@ -87,28 +92,48 @@ export default function LexisAutomatorUI() {
         {/* Loading Skeleton */}
         {isLoading && (
           <div className="space-y-6">
-            <Skeleton className="h-12 w-48 rounded" />
-            <Skeleton className="h-6 w-32 rounded" />
+            <Skeleton className="h-12 w-48 rounded bg-stone-200" />
+            <Skeleton className="h-6 w-32 rounded bg-stone-200" />
             <div className="space-y-4 pt-4">
-              <Skeleton className="h-40 w-full rounded-xl" />
-              <Skeleton className="h-40 w-full rounded-xl" />
+              <Skeleton className="h-40 w-full rounded-xl bg-stone-200" />
+              <Skeleton className="h-40 w-full rounded-xl bg-stone-200" />
             </div>
           </div>
         )}
 
         {/* Empty State */}
         {!isLoading && !wordData && (
-          <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
-            <BookOpen className="mx-auto h-12 w-12 text-slate-300 mb-4" />
-            <h3 className="text-lg font-medium text-slate-600">No Word Selected</h3>
-            <p className="text-slate-500">Search for a word above to see its definitions.</p>
+          <div className="text-center py-20 bg-stone-100/80 rounded-2xl border border-dashed border-stone-300">
+            <BookOpen className="mx-auto h-12 w-12 text-stone-400 mb-4" />
+            {submittedQuery ? (
+              <>
+                <h3 className="text-lg font-medium text-stone-600">Word Not Found</h3>
+                <p className="text-stone-500 mt-2">No definitions found for <span className="font-medium">"{submittedQuery}"</span></p>
+                <p className="text-sm text-stone-400 mt-4">Try searching for another word or check the spelling.</p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-medium text-stone-500">No Word Selected</h3>
+                <p className="text-stone-400">Search for a word above to see its definitions.</p>
+              </>
+            )}
           </div>
         )}
 
         {/* Results */}
         {!isLoading && wordData && (
           <>
-            <WordHeader word={wordData.word} phonetics={wordData.phonetics} />
+            <div className="flex items-start justify-between gap-4">
+              <WordHeader word={wordData.word} phonetics={wordData.phonetics} />
+              {selectedDefs.length > 0 && (
+                <button
+                  onClick={clearSelection}
+                  className="shrink-0 mt-2 text-sm text-stone-400 hover:text-stone-600 underline underline-offset-2 transition-colors"
+                >
+                  Unselect all ({selectedDefs.length})
+                </button>
+              )}
+            </div>
 
             <div className="space-y-8">
               {Array.from(groupedMeanings.entries()).map(([pos, items]) => {
@@ -122,8 +147,8 @@ export default function LexisAutomatorUI() {
                       <Badge variant="outline" className={`text-sm px-3 py-1 shadow-none ${getPosBadgeColor(pos)}`}>
                         {pos}
                       </Badge>
-                      <Separator className="flex-1" />
-                      <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isCollapsed ? "-rotate-90" : ""}`} />
+                      <Separator className="flex-1 bg-stone-300" />
+                      <ChevronDown className={`h-4 w-4 text-stone-400 transition-transform duration-200 ${isCollapsed ? "-rotate-90" : ""}`} />
                     </button>
 
                     {!isCollapsed && (
@@ -165,15 +190,15 @@ export default function LexisAutomatorUI() {
             prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
           );
         }}
-        isExporting={isExporting}
+        isExporting={isSaving}
         isGeneratingAll={isGeneratingAll}
-        onDownload={handleDownload}
+        onDownload={() => handleQueueExport(enqueue)}
         onGenerateAllMissing={handleGenerateAllMissing}
         decks={decks}
         decksLoading={decksLoading}
         selectedDeckId={selectedDeckId}
         onSelectDeck={setSelectedDeckId}
-        onCreateDeck={async (name) => { await createDeck(name); }}
+        onCreateDeck={async (name) => { const deck = await createDeck(name); return deck?.id ?? null; }}
         isSaving={isSaving}
         onSaveToDeck={handleSaveToDeck}
       />

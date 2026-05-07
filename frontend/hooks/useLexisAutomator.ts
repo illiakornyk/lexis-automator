@@ -14,6 +14,7 @@ import { useSaveToDecks, CardToSave } from "./useSaveToDecks";
 export function useLexisAutomator() {
   // --- Core state ---
   const [searchQuery, setSearchQuery] = useState("");
+  const [submittedQuery, setSubmittedQuery] = useState("");
   const [wordData, setWordData] = useState<DictionaryEntry | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDefs, setSelectedDefs] = useState<string[]>([]);
@@ -56,6 +57,17 @@ export function useLexisAutomator() {
 
   // ───────────────────────────── Helpers ─────────────────────────────
 
+  const toastGenerateError = (error: any) => {
+    const msg: string = error?.message ?? "";
+    if (msg.includes("401") || /api key/i.test(msg)) {
+      toast.error("Invalid API key", {
+        description: "Your OpenAI API key is incorrect or missing. Update it in Settings.",
+      });
+    } else {
+      toast.error(msg || "Failed to generate example.");
+    }
+  };
+
   /** Immutably updates a single example within the wordData tree. */
   const updateExample = (mIdx: number, dIdx: number, example: string) => {
     setWordData((prev) => {
@@ -74,13 +86,15 @@ export function useLexisAutomator() {
     );
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const clearSelection = () => setSelectedDefs([]);
+
+  const handleSearch = async () => {
     if (!searchQuery.trim()) return;
 
     setIsLoading(true);
     setWordData(null);
     setSelectedDefs([]);
+    setSubmittedQuery(searchQuery.trim());
 
     try {
       const data = await LexisApi.getDefinition(searchQuery.trim());
@@ -108,7 +122,7 @@ export function useLexisAutomator() {
       updateExample(mIdx, dIdx, res.example);
       toast.success("AI Example generated successfully!");
     } catch (error: any) {
-      toast.error(error.message || "Failed to generate example.");
+      toastGenerateError(error);
     } finally {
       setGeneratingExamples((prev) => ({ ...prev, [defId]: false }));
     }
@@ -141,7 +155,7 @@ export function useLexisAutomator() {
         updateExample(item.mIdx, item.dIdx, res.example);
         successCount++;
       } catch (error: any) {
-        toast.error(`Failed to generate example for: "${item.definition.slice(0, 40)}..."`);
+        toastGenerateError(error);
       } finally {
         setGeneratingExamples((prev) => ({ ...prev, [item.defId]: false }));
       }
@@ -177,6 +191,38 @@ export function useLexisAutomator() {
     const success = await saveCards(selectedDeckId, deck.cardCount, cards);
     if (success) incrementCardCount(selectedDeckId, cards.length);
     setIsSaving(false);
+  };
+
+  const handleQueueExport = async (enqueue: (payload: { deckIds: string[]; templateIds: string[]; accent: string; gender: string }) => Promise<any>) => {
+    if (!wordData || !selectedDeckId || selectedTemplateIds.length === 0) return;
+    const deck = decks.find((d) => d.id === selectedDeckId);
+    if (!deck) return;
+
+    const cards: CardToSave[] = [];
+    for (const defId of selectedDefs) {
+      const { mIdx, dIdx } = parseDefId(defId);
+      const meaning = wordData.meanings[mIdx];
+      const def = meaning?.definitions[dIdx];
+      if (!def) continue;
+      cards.push({
+        word: wordData.word,
+        partOfSpeech: meaning.partOfSpeech,
+        phonetic: wordData.phonetics?.find((p) => p.text)?.text || "",
+        definition: def.definition,
+        example: def.example || "",
+      });
+    }
+
+    setIsSaving(true);
+    try {
+      await saveCards(selectedDeckId, deck.cardCount, cards);
+      await enqueue({ deckIds: [selectedDeckId], templateIds: selectedTemplateIds, accent, gender });
+      toast.success("Added to export queue!");
+    } catch {
+      toast.error("Failed to queue export.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDownload = async () => {
@@ -253,6 +299,7 @@ export function useLexisAutomator() {
     // State
     searchQuery,
     setSearchQuery,
+    submittedQuery,
     wordData,
     isLoading,
     selectedDefs,
@@ -279,6 +326,8 @@ export function useLexisAutomator() {
 
     // Handlers
     toggleSelection,
+    clearSelection,
+    handleQueueExport,
     handleSearch,
     handleGenerateExample,
     handleGenerateAllMissing,
