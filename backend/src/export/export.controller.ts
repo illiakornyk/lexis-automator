@@ -5,6 +5,7 @@ import {
   Res,
   StreamableFile,
   UseGuards,
+  HttpStatus,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -36,7 +37,7 @@ export class ExportController {
   @Post('anki')
   @UseGuards(SupabaseAuthGuard)
   @ApiOperation({ summary: 'Generate an APKG file from raw card data' })
-  @ApiResponse({ status: 200, description: 'Returns an .apkg file stream' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Returns an .apkg file stream' })
   async exportAnki(
     @Body() exportDto: ExportAnkiDto,
     @Res({ passthrough: true }) res: Response,
@@ -54,8 +55,8 @@ export class ExportController {
   @Post('deck')
   @UseGuards(SupabaseAuthGuard)
   @ApiOperation({ summary: 'Export a saved deck by ID as an APKG file' })
-  @ApiResponse({ status: 200, description: 'Returns an .apkg file stream' })
-  @ApiResponse({ status: 400, description: 'Deck not found or has no cards' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Returns an .apkg file stream' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Deck not found or has no cards' })
   async exportDeck(
     @Body() dto: ExportDeckDto,
     @Res({ passthrough: true }) res: Response,
@@ -76,11 +77,11 @@ export class ExportController {
     summary: 'Export multiple decks as a ZIP archive of APKG files',
   })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Returns a .zip stream containing one .apkg per deck',
   })
   @ApiResponse({
-    status: 400,
+    status: HttpStatus.BAD_REQUEST,
     description: 'No valid decks found for the given IDs',
   })
   async exportDecksArchive(

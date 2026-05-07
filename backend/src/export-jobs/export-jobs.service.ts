@@ -12,8 +12,7 @@ import type { Database } from '@/types/database.types';
 import { SupabaseService } from '@/supabase/supabase.service';
 import { CreateExportJobsDto } from './dto/create-export-jobs.dto';
 
-export const EXPORT_JOBS_QUEUE = 'export-jobs';
-export const MAX_DONE_SLOTS = 5;
+import { EXPORT_JOBS_QUEUE, MAX_DONE_SLOTS, STUCK_JOB_TIMEOUT_MS } from './export-jobs.constants';
 
 @Injectable()
 export class ExportJobsService {
@@ -264,7 +263,7 @@ export class ExportJobsService {
       this.logger.log(`Deleted ${expiredRows.length} expired export jobs`);
     }
 
-    const stuckThreshold = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const stuckThreshold = new Date(Date.now() - STUCK_JOB_TIMEOUT_MS).toISOString();
     await this.supabase
       .from('export_jobs')
       .update({ status: 'pending', started_at: null })

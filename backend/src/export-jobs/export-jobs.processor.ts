@@ -2,7 +2,8 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import * as fs from 'fs/promises';
-import { ExportJobsService, EXPORT_JOBS_QUEUE } from './export-jobs.service';
+import { ExportJobsService } from './export-jobs.service';
+import { EXPORT_JOBS_QUEUE } from './export-jobs.constants';
 import { ExportService } from '@/export/export.service';
 import { Accent, Gender } from '@/tts/dto/generate-tts.dto';
 
@@ -70,14 +71,12 @@ export class ExportJobsProcessor extends WorkerHost {
 
       await this.exportJobsService.markDone(jobId, storagePath);
       this.logger.log(`Job ${jobId} done → ${storagePath}`);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
       const isLastAttempt = job.attemptsMade >= (job.opts.attempts ?? 1) - 1;
       if (isLastAttempt) {
-        await this.exportJobsService.markFailed(
-          jobId,
-          err.message ?? 'Unknown error',
-        );
-        this.logger.error(`Job ${jobId} permanently failed: ${err.message}`);
+        await this.exportJobsService.markFailed(jobId, message);
+        this.logger.error(`Job ${jobId} permanently failed: ${message}`);
       } else {
         this.logger.warn(
           `Job ${jobId} failed (attempt ${job.attemptsMade + 1}), will retry.`,

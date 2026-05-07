@@ -13,26 +13,18 @@ import { firstValueFrom } from 'rxjs';
 import { PassThrough } from 'stream';
 import { v4 as uuidv4 } from 'uuid';
 import {
-	CardDataDto,
 	ExportAnkiDto,
 	TtsSettingsDto,
 } from './dto/export-anki.dto';
 import { ExportDeckDto } from './dto/export-deck.dto';
 import { ExportDecksArchiveDto } from './dto/export-decks-archive.dto';
-import {
-	CompiledTemplate,
-	resolveAndCompileTemplates,
-} from './utils/anki-compiler';
-
-interface MappedCard extends CardDataDto {
-  imagePath: string | null;
-}
-
-interface DeckExportResult {
-  apkgPath: string;
-  deckName: string;
-  cleanup: () => Promise<void>;
-}
+import { resolveAndCompileTemplates, type CompiledTemplate } from './utils/anki-compiler';
+import type {
+  MappedCard,
+  AnkiCardPayload,
+  AnkiPayload,
+  DeckExportResult,
+} from './export.types';
 
 @Injectable()
 export class ExportService {
@@ -68,7 +60,7 @@ export class ExportService {
     templates: CompiledTemplate[],
     tempDir: string,
   ): Promise<string> {
-    const pythonPayload: any = {
+    const pythonPayload: AnkiPayload = {
       deck_name: deckName,
       deck_uuid: uuidv4(),
       templates,
@@ -212,8 +204,9 @@ export class ExportService {
         dto.ttsSettings,
       );
       return { fileStream: createReadStream(apkgPath), cleanup, deckName };
-    } catch (error: any) {
-      throw new BadRequestException(error?.message || 'Failed to export deck');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to export deck';
+      throw new BadRequestException(message);
     }
   }
 
