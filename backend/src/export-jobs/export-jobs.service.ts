@@ -8,7 +8,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '@/types/database.types';
+import type { Database } from '@/types/database.types';
 import { SupabaseService } from '@/supabase/supabase.service';
 import { CreateExportJobsDto } from './dto/create-export-jobs.dto';
 
@@ -40,7 +40,6 @@ export class ExportJobsService {
       );
     }
 
-    // Batch-fetch all requested decks owned by this user in one query
     const { data: decks } = await this.supabase
       .from('decks')
       .select('id, name')
@@ -206,6 +205,17 @@ export class ExportJobsService {
       .from('export_jobs')
       .update({ status: 'failed', error_message: errorMessage })
       .eq('id', jobId);
+  }
+
+  async removeJob(jobId: string, userId: string): Promise<void> {
+    const job = await this.getJob(jobId);
+    if (!job) return;
+
+    if (job.status === 'pending' || job.status === 'processing') {
+      await this.cancelJob(jobId, userId);
+    } else {
+      await this.deleteJob(jobId, userId);
+    }
   }
 
   async uploadToStorage(
