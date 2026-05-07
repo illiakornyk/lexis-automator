@@ -8,7 +8,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '../types/database.types';
+import { Database } from '@/types/database.types';
 import { CreateExportJobsDto } from './dto/create-export-jobs.dto';
 
 export const EXPORT_JOBS_QUEUE = 'export-jobs';

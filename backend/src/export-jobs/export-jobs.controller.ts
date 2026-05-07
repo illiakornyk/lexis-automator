@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { ExportJobsService } from './export-jobs.service';
 import { CreateExportJobsDto } from './dto/create-export-jobs.dto';
-import { SupabaseAuthGuard } from '../guards/supabase-auth.guard';
+import { SupabaseAuthGuard } from '@/guards/supabase-auth.guard';
 
 @Controller('export-jobs')
 @UseGuards(SupabaseAuthGuard)

@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '../../types/database.types';
+import { Database } from '@/types/database.types';
 
 type FieldType = 'Word' | 'PartOfSpeech' | 'Phonetic' | 'Definition' | 'Example' | 'Audio' | 'Image' | 'TypeIn' | 'Cloze';
 

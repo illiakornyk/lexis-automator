@@ -5,7 +5,7 @@ import { ExportService } from './export.service';
 import { ExportAnkiDto } from './dto/export-anki.dto';
 import { ExportDeckDto } from './dto/export-deck.dto';
 import { ExportDecksArchiveDto } from './dto/export-decks-archive.dto';
-import { SupabaseAuthGuard } from '../guards/supabase-auth.guard';
+import { SupabaseAuthGuard } from '@/guards/supabase-auth.guard';
 
 function toSafeFilename(name: string, fallback = 'deck'): string {
   return name.replace(/[^a-z0-9]/gi, '_').toLowerCase() || fallback;

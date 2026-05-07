@@ -1,14 +1,14 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '../types/database.types';
+import { Database } from '@/types/database.types';
 import { ExportAnkiDto, CardDataDto, TtsSettingsDto } from './dto/export-anki.dto';
 import { ExportDeckDto } from './dto/export-deck.dto';
 import { ExportDecksArchiveDto } from './dto/export-decks-archive.dto';
 import { CompiledTemplate, resolveAndCompileTemplates } from './utils/anki-compiler';
-import { TtsService } from '../tts/tts.service';
-import { ImagesService } from '../images/images.service';
-import { Accent, Gender } from '../tts/dto/generate-tts.dto';
+import { TtsService } from '@/tts/tts.service';
+import { ImagesService } from '@/images/images.service';
+import { Accent, Gender } from '@/tts/dto/generate-tts.dto';
 import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
 import * as fs from 'fs/promises';

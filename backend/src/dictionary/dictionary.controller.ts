@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { DictionaryService } from './dictionary.service';
 import { DictionaryEntry } from './classes/dictionary-entry.class';
-import { AiService } from '../ai/ai.service';
+import { AiService } from '@/ai/ai.service';
 import { GenerateExampleDto } from './dto/generate-example.dto';
 
 @ApiTags('dictionary')

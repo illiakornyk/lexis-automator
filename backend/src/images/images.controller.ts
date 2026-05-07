@@ -17,7 +17,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ImagesService } from './images.service';
 import { SaveImageDto } from './dto/save-image.dto';
-import { SupabaseAuthGuard } from '../guards/supabase-auth.guard';
+import { SupabaseAuthGuard } from '@/guards/supabase-auth.guard';
 
 @Controller('images')
 @UseGuards(SupabaseAuthGuard)

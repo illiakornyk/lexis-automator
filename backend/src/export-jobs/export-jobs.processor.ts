@@ -3,8 +3,8 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import * as fs from 'fs/promises';
 import { ExportJobsService, EXPORT_JOBS_QUEUE } from './export-jobs.service';
-import { ExportService } from '../export/export.service';
-import { Accent, Gender } from '../tts/dto/generate-tts.dto';
+import { ExportService } from '@/export/export.service';
+import { Accent, Gender } from '@/tts/dto/generate-tts.dto';
 
 @Processor(EXPORT_JOBS_QUEUE, { concurrency: 2 })
 export class ExportJobsProcessor extends WorkerHost {
