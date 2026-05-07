@@ -18,6 +18,7 @@ export interface AnkiCardPayload {
 export interface AnkiPayload {
   deck_name: string;
   deck_uuid: string;
+  output_dir: string;
   templates: CompiledTemplate[];
   cards: AnkiCardPayload[];
 }

@@ -63,6 +63,7 @@ export class ExportService {
     const pythonPayload: AnkiPayload = {
       deck_name: deckName,
       deck_uuid: uuidv4(),
+      output_dir: tempDir,
       templates,
       cards: [],
     };

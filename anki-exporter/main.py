@@ -1,14 +1,16 @@
-from fastapi import FastAPI
-from schemas import DeckRequest
+from __future__ import annotations
+
+from fastapi import FastAPI, HTTPException
+from schemas import DeckRequest, GenerateResponse
 from anki_utils import create_anki_package
 
 app = FastAPI(title="Anki Exporter Service")
 
-@app.post("/generate")
-async def generate_deck(req: DeckRequest):
-    out_file = create_anki_package(req)
-    return {"status": "success", "file_path": out_file}
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+@app.post("/generate", response_model=GenerateResponse)
+async def generate_deck(req: DeckRequest) -> GenerateResponse:
+    try:
+        out_file = create_anki_package(req)
+        return GenerateResponse(status="success", file_path=out_file)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
