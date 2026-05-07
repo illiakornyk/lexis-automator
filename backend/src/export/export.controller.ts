@@ -6,6 +6,20 @@ import { ExportDeckDto } from './dto/export-deck.dto';
 import { ExportDecksArchiveDto } from './dto/export-decks-archive.dto';
 import { SupabaseAuthGuard } from '../guards/supabase-auth.guard';
 
+function toSafeFilename(name: string, fallback = 'deck'): string {
+  return name.replace(/[^a-z0-9]/gi, '_').toLowerCase() || fallback;
+}
+
+function onceCleanup(cleanup: () => Promise<void>): () => void {
+  let called = false;
+  return () => {
+    if (!called) {
+      called = true;
+      void cleanup();
+    }
+  };
+}
+
 @Controller('export')
 export class ExportController {
   constructor(private readonly exportService: ExportService) {}
@@ -19,10 +33,9 @@ export class ExportController {
     const { fileStream, cleanup } = await this.exportService.generateApkg(exportDto);
     res.set({
       'Content-Type': 'application/octet-stream',
-      'Content-Disposition': `attachment; filename="${exportDto.deckName.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'deck'}.apkg"`,
+      'Content-Disposition': `attachment; filename="${toSafeFilename(exportDto.deckName)}.apkg"`,
     });
-    res.on('finish', () => cleanup());
-    res.on('close', () => cleanup());
+    res.on('close', onceCleanup(cleanup));
     return new StreamableFile(fileStream);
   }
 
@@ -35,10 +48,9 @@ export class ExportController {
     const { fileStream, cleanup, deckName } = await this.exportService.exportDeck(dto);
     res.set({
       'Content-Type': 'application/octet-stream',
-      'Content-Disposition': `attachment; filename="${deckName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.apkg"`,
+      'Content-Disposition': `attachment; filename="${toSafeFilename(deckName)}.apkg"`,
     });
-    res.on('finish', () => cleanup());
-    res.on('close', () => cleanup());
+    res.on('close', onceCleanup(cleanup));
     return new StreamableFile(fileStream);
   }
 

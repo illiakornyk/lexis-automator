@@ -76,21 +76,15 @@ export async function resolveAndCompileTemplates(
   templateIds: string[],
   supabase: SupabaseClient,
 ): Promise<CompiledTemplate[]> {
-  const compiled: CompiledTemplate[] = [];
-
-  for (const id of templateIds) {
-    if (id.startsWith('default-')) {
-      const raw = DEFAULT_TEMPLATES_MAP[id];
-      if (raw) compiled.push(compileRaw(raw));
-    }
-  }
+  const resultMap = new Map<string, CompiledTemplate>();
 
   const customIds = templateIds.filter((id) => !id.startsWith('default-'));
   if (customIds.length > 0) {
     const { data } = await supabase.from('templates').select('*').in('id', customIds);
     if (data) {
       for (const row of data) {
-        compiled.push(
+        resultMap.set(
+          row.id,
           compileRaw({
             name: row.name,
             isCloze: row.is_cloze,
@@ -101,6 +95,16 @@ export async function resolveAndCompileTemplates(
       }
     }
   }
+
+  const compiled = templateIds
+    .map((id) => {
+      if (id.startsWith('default-')) {
+        const raw = DEFAULT_TEMPLATES_MAP[id];
+        return raw ? compileRaw(raw) : null;
+      }
+      return resultMap.get(id) ?? null;
+    })
+    .filter((t): t is CompiledTemplate => t !== null);
 
   if (compiled.length === 0) {
     compiled.push(compileRaw(DEFAULT_TEMPLATES_MAP['default-recognition']));
