@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { createClient } from '@/lib/supabase';
 import { toast } from 'sonner';
+import type { Tables } from '@/lib/types/database.types';
 
 export type FieldType = 'Word' | 'PartOfSpeech' | 'Phonetic' | 'Definition' | 'Example' | 'Audio' | 'Image' | 'Cloze' | 'TypeIn';
 
@@ -52,7 +53,7 @@ export function useTemplates() {
     const [isLoaded, setIsLoaded] = useState(false);
     const supabase = createClient();
 
-    const mapDbToTemplate = (row: any): CustomTemplate => ({
+    const mapDbToTemplate = (row: Tables<'templates'>): CustomTemplate => ({
         id: row.id,
         name: row.name,
         isCloze: row.is_cloze,
