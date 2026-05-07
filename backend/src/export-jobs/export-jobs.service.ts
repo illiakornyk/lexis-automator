@@ -7,8 +7,9 @@ import {
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database.types';
+import { SupabaseService } from '@/supabase/supabase.service';
 import { CreateExportJobsDto } from './dto/create-export-jobs.dto';
 
 export const EXPORT_JOBS_QUEUE = 'export-jobs';
@@ -21,11 +22,9 @@ export class ExportJobsService {
 
   constructor(
     @InjectQueue(EXPORT_JOBS_QUEUE) private readonly queue: Queue,
+    supabaseService: SupabaseService,
   ) {
-    this.supabase = createClient<Database>(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
+    this.supabase = supabaseService.client;
   }
 
   async createJobs(userId: string, dto: CreateExportJobsDto) {
@@ -68,7 +67,9 @@ export class ExportJobsService {
         .single();
 
       if (error || !job) {
-        this.logger.error(`Failed to create job for deck ${deckId}: ${error?.message}`);
+        this.logger.error(
+          `Failed to create job for deck ${deckId}: ${error?.message}`,
+        );
         continue;
       }
 
@@ -112,7 +113,9 @@ export class ExportJobsService {
 
     if (!job) throw new NotFoundException('Job not found');
     if (!['pending', 'processing'].includes(job.status)) {
-      throw new BadRequestException('Can only cancel pending or processing jobs');
+      throw new BadRequestException(
+        'Can only cancel pending or processing jobs',
+      );
     }
 
     if (job.status === 'pending') {
@@ -173,7 +176,11 @@ export class ExportJobsService {
   async markProcessing(jobId: string, attempt: number) {
     const { data } = await this.supabase
       .from('export_jobs')
-      .update({ status: 'processing', started_at: new Date().toISOString(), attempts: attempt })
+      .update({
+        status: 'processing',
+        started_at: new Date().toISOString(),
+        attempts: attempt,
+      })
       .eq('id', jobId)
       .select()
       .single();
@@ -183,7 +190,11 @@ export class ExportJobsService {
   async markDone(jobId: string, filePath: string) {
     await this.supabase
       .from('export_jobs')
-      .update({ status: 'done', file_path: filePath, completed_at: new Date().toISOString() })
+      .update({
+        status: 'done',
+        file_path: filePath,
+        completed_at: new Date().toISOString(),
+      })
       .eq('id', jobId);
   }
 
@@ -194,11 +205,18 @@ export class ExportJobsService {
       .eq('id', jobId);
   }
 
-  async uploadToStorage(userId: string, jobId: string, buffer: Buffer): Promise<string> {
+  async uploadToStorage(
+    userId: string,
+    jobId: string,
+    buffer: Buffer,
+  ): Promise<string> {
     const filePath = `exports/${userId}/${jobId}.apkg`;
     const { error } = await this.supabase.storage
       .from('exports')
-      .upload(filePath, buffer, { contentType: 'application/octet-stream', upsert: true });
+      .upload(filePath, buffer, {
+        contentType: 'application/octet-stream',
+        upsert: true,
+      });
 
     if (error) throw new Error(`Storage upload failed: ${error.message}`);
     return filePath;

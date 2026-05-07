@@ -1,21 +1,28 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { ImagesService } from '@/images/images.service';
+import { TtsService } from '@/tts/tts.service';
 import { Database } from '@/types/database.types';
-import { ExportAnkiDto, CardDataDto, TtsSettingsDto } from './dto/export-anki.dto';
+import { HttpService } from '@nestjs/axios';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseService } from '@/supabase/supabase.service';
+import * as archiver from 'archiver';
+import { createReadStream } from 'fs';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { firstValueFrom } from 'rxjs';
+import { PassThrough } from 'stream';
+import { v4 as uuidv4 } from 'uuid';
+import {
+	CardDataDto,
+	ExportAnkiDto,
+	TtsSettingsDto,
+} from './dto/export-anki.dto';
 import { ExportDeckDto } from './dto/export-deck.dto';
 import { ExportDecksArchiveDto } from './dto/export-decks-archive.dto';
-import { CompiledTemplate, resolveAndCompileTemplates } from './utils/anki-compiler';
-import { TtsService } from '@/tts/tts.service';
-import { ImagesService } from '@/images/images.service';
-import { Accent, Gender } from '@/tts/dto/generate-tts.dto';
-import { v4 as uuidv4 } from 'uuid';
-import * as path from 'path';
-import * as fs from 'fs/promises';
-import { createReadStream } from 'fs';
-import { PassThrough } from 'stream';
-import * as archiver from 'archiver';
-import { firstValueFrom } from 'rxjs';
+import {
+	CompiledTemplate,
+	resolveAndCompileTemplates,
+} from './utils/anki-compiler';
 
 interface MappedCard extends CardDataDto {
   imagePath: string | null;
@@ -36,14 +43,14 @@ export class ExportService {
     private readonly httpService: HttpService,
     private readonly ttsService: TtsService,
     private readonly imagesService: ImagesService,
+    supabaseService: SupabaseService,
   ) {
-    this.supabase = createClient<Database>(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
+    this.supabase = supabaseService.client;
   }
 
-  private mapRawCard(c: Database['public']['Tables']['saved_cards']['Row']): MappedCard {
+  private mapRawCard(
+    c: Database['public']['Tables']['saved_cards']['Row'],
+  ): MappedCard {
     return {
       word: c.word,
       partOfSpeech: c.part_of_speech,
@@ -77,8 +84,8 @@ export class ExportService {
       try {
         const audioBase64 = await this.ttsService.generateAudio(
           ttsText,
-          ttsSettings.accent as Accent,
-          ttsSettings.gender as Gender,
+          ttsSettings.accent,
+          ttsSettings.gender,
         );
         const filename = `${card.word}_${i}.webm`.replace(/[^a-z0-9_.]/gi, '_');
         audioPath = path.join(tempDir, filename);
@@ -89,9 +96,14 @@ export class ExportService {
 
       if (card.imagePath) {
         try {
-          imagePath = await this.imagesService.downloadToFile(card.imagePath, tempDir);
+          imagePath = await this.imagesService.downloadToFile(
+            card.imagePath,
+            tempDir,
+          );
         } catch {
-          this.logger.warn(`Image download failed for card "${card.word}", skipping image.`);
+          this.logger.warn(
+            `Image download failed for card "${card.word}", skipping image.`,
+          );
         }
       }
 
@@ -106,7 +118,8 @@ export class ExportService {
       });
     }
 
-    const pythonServiceUrl = process.env.ANKI_EXPORTER_URL || 'http://127.0.0.1:8000';
+    const pythonServiceUrl =
+      process.env.ANKI_EXPORTER_URL || 'http://127.0.0.1:8000';
     this.logger.log(`Requesting APKG generation for deck: ${deckName}`);
     const response = await firstValueFrom(
       this.httpService.post(`${pythonServiceUrl}/generate`, pythonPayload),
@@ -139,13 +152,23 @@ export class ExportService {
     if (!rawCards?.length) throw new Error(`Deck "${deck.name}" has no cards`);
 
     const cards = rawCards.map((c) => this.mapRawCard(c));
-    const templates = await resolveAndCompileTemplates(templateIds, this.supabase);
+    const templates = await resolveAndCompileTemplates(
+      templateIds,
+      this.supabase,
+    );
 
     const tempDir = path.join(process.cwd(), 'temp', `export-${uuidv4()}`);
     await fs.mkdir(tempDir, { recursive: true });
-    const cleanup = () => fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    const cleanup = () =>
+      fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
 
-    const apkgPath = await this.buildApkgFile(deck.name, cards, ttsSettings, templates, tempDir);
+    const apkgPath = await this.buildApkgFile(
+      deck.name,
+      cards,
+      ttsSettings,
+      templates,
+      tempDir,
+    );
     return { apkgPath, deckName: deck.name, cleanup };
   }
 
@@ -171,7 +194,8 @@ export class ExportService {
         tempDir,
       );
       const fileStream = createReadStream(apkgPath);
-      const cleanup = () => fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      const cleanup = () =>
+        fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
       return { fileStream, cleanup };
     } catch (error) {
       await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
@@ -195,10 +219,14 @@ export class ExportService {
 
   async exportDecksArchive(dto: ExportDecksArchiveDto) {
     const cleanups: Array<() => Promise<void>> = [];
-    const runAllCleanups = () => Promise.all(cleanups.map((fn) => fn())).then(() => {});
+    const runAllCleanups = () =>
+      Promise.all(cleanups.map((fn) => fn())).then(() => {});
 
     try {
-      const templates = await resolveAndCompileTemplates(dto.templateIds, this.supabase);
+      const templates = await resolveAndCompileTemplates(
+        dto.templateIds,
+        this.supabase,
+      );
 
       // Batch fetch all decks in one query
       const { data: decks } = await this.supabase
@@ -226,16 +254,25 @@ export class ExportService {
 
         const tempDir = path.join(process.cwd(), 'temp', `export-${uuidv4()}`);
         await fs.mkdir(tempDir, { recursive: true });
-        cleanups.push(() => fs.rm(tempDir, { recursive: true, force: true }).catch(() => {}));
+        cleanups.push(() =>
+          fs.rm(tempDir, { recursive: true, force: true }).catch(() => {}),
+        );
 
-        const apkgPath = await this.buildApkgFile(deckName, cards, dto.ttsSettings, templates, tempDir);
+        const apkgPath = await this.buildApkgFile(
+          deckName,
+          cards,
+          dto.ttsSettings,
+          templates,
+          tempDir,
+        );
         apkgEntries.push({
           filePath: apkgPath,
           archiveName: `${deckName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.apkg`,
         });
       }
 
-      if (apkgEntries.length === 0) throw new BadRequestException('No valid decks to export');
+      if (apkgEntries.length === 0)
+        throw new BadRequestException('No valid decks to export');
 
       const archive = archiver.create('zip', { zlib: { level: 6 } });
       const passThrough = new PassThrough();

@@ -19,9 +19,14 @@ export class ExportJobsProcessor extends WorkerHost {
 
   async process(job: Job<{ jobId: string }>): Promise<void> {
     const { jobId } = job.data;
-    this.logger.log(`Processing export job ${jobId} (attempt ${job.attemptsMade + 1})`);
+    this.logger.log(
+      `Processing export job ${jobId} (attempt ${job.attemptsMade + 1})`,
+    );
 
-    const exportJob = await this.exportJobsService.markProcessing(jobId, job.attemptsMade + 1);
+    const exportJob = await this.exportJobsService.markProcessing(
+      jobId,
+      job.attemptsMade + 1,
+    );
 
     if (!exportJob || exportJob.status === 'cancelled') {
       this.logger.log(`Job ${jobId} was cancelled before processing started.`);
@@ -40,14 +45,19 @@ export class ExportJobsProcessor extends WorkerHost {
         exportJob.deck_id,
         exportJob.user_id,
         exportJob.template_ids,
-        { accent: exportJob.accent as Accent, gender: exportJob.gender as Gender },
+        {
+          accent: exportJob.accent as Accent,
+          gender: exportJob.gender as Gender,
+        },
       );
       cleanup = result.cleanup;
 
       // Check cancellation after the long-running build
       const current = await this.exportJobsService.getJob(jobId);
       if (current?.status === 'cancelled') {
-        this.logger.log(`Job ${jobId} was cancelled after build, discarding output.`);
+        this.logger.log(
+          `Job ${jobId} was cancelled after build, discarding output.`,
+        );
         return;
       }
 
@@ -63,10 +73,15 @@ export class ExportJobsProcessor extends WorkerHost {
     } catch (err: any) {
       const isLastAttempt = job.attemptsMade >= (job.opts.attempts ?? 1) - 1;
       if (isLastAttempt) {
-        await this.exportJobsService.markFailed(jobId, err.message ?? 'Unknown error');
+        await this.exportJobsService.markFailed(
+          jobId,
+          err.message ?? 'Unknown error',
+        );
         this.logger.error(`Job ${jobId} permanently failed: ${err.message}`);
       } else {
-        this.logger.warn(`Job ${jobId} failed (attempt ${job.attemptsMade + 1}), will retry.`);
+        this.logger.warn(
+          `Job ${jobId} failed (attempt ${job.attemptsMade + 1}), will retry.`,
+        );
       }
       throw err;
     } finally {

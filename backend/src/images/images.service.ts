@@ -1,12 +1,9 @@
-import {
-  Injectable,
-  Logger,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database.types';
+import { SupabaseService } from '@/supabase/supabase.service';
 import { firstValueFrom } from 'rxjs';
 import * as path from 'path';
 
@@ -35,11 +32,9 @@ export class ImagesService {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    supabaseService: SupabaseService,
   ) {
-    this.supabase = createClient<Database>(
-      this.configService.getOrThrow('SUPABASE_URL'),
-      this.configService.getOrThrow('SUPABASE_SERVICE_ROLE_KEY'),
-    );
+    this.supabase = supabaseService.client;
     this.pixabayKey = this.configService.getOrThrow('PIXABAY_API_KEY');
   }
 
@@ -53,7 +48,11 @@ export class ImagesService {
     }));
   }
 
-  async saveFromUrl(cardId: string, userId: string, url: string): Promise<string> {
+  async saveFromUrl(
+    cardId: string,
+    userId: string,
+    url: string,
+  ): Promise<string> {
     let buffer: Buffer;
     let contentType: string;
 
@@ -74,7 +73,12 @@ export class ImagesService {
     return this.storeBuffer(cardId, userId, buffer, contentType);
   }
 
-  async saveFromUpload(cardId: string, userId: string, buffer: Buffer, mimeType: string): Promise<string> {
+  async saveFromUpload(
+    cardId: string,
+    userId: string,
+    buffer: Buffer,
+    mimeType: string,
+  ): Promise<string> {
     if (buffer.length > MAX_IMAGE_BYTES) {
       throw new BadRequestException('Image exceeds 1 MB limit');
     }
@@ -127,11 +131,15 @@ export class ImagesService {
       .eq('id', cardId);
   }
 
-  async createSignedUrl(storagePath: string, expiresIn = 3600): Promise<string> {
+  async createSignedUrl(
+    storagePath: string,
+    expiresIn = 3600,
+  ): Promise<string> {
     const { data, error } = await this.supabase.storage
       .from(BUCKET)
       .createSignedUrl(storagePath, expiresIn);
-    if (error || !data) throw new BadRequestException('Failed to create signed URL');
+    if (error || !data)
+      throw new BadRequestException('Failed to create signed URL');
     return data.signedUrl;
   }
 
@@ -139,7 +147,8 @@ export class ImagesService {
     const { data, error } = await this.supabase.storage
       .from(BUCKET)
       .download(storagePath);
-    if (error || !data) throw new Error(`Failed to download image: ${storagePath}`);
+    if (error || !data)
+      throw new Error(`Failed to download image: ${storagePath}`);
 
     const buffer = Buffer.from(await data.arrayBuffer());
     const ext = path.extname(storagePath) || '.jpg';

@@ -1,5 +1,9 @@
 import { spawn } from 'child_process';
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { TextToSpeechClient } from '@google-cloud/text-to-speech';
 import { Accent, Gender } from './dto/generate-tts.dto';
 
@@ -13,7 +17,10 @@ export class TtsService {
     try {
       this.client = new TextToSpeechClient();
     } catch (e) {
-      this.logger.error('Failed to initialize Google TTS Client. Ensure GOOGLE_APPLICATION_CREDENTIALS is set.', e);
+      this.logger.error(
+        'Failed to initialize Google TTS Client. Ensure GOOGLE_APPLICATION_CREDENTIALS is set.',
+        e,
+      );
     }
   }
 
@@ -28,11 +35,15 @@ export class TtsService {
   private convertWavToWebm(wavBuffer: Buffer): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const ffmpegProcess = spawn('ffmpeg', [
-        '-i', 'pipe:0',      // Read from stdin
-        '-f', 'webm',        // Output format
-        '-c:a', 'libopus',   // Codec (native for webm)
-        '-b:a', '32k',       // Bitrate: 32k is cost/size efficient for speech
-        'pipe:1'             // Write to stdout
+        '-i',
+        'pipe:0', // Read from stdin
+        '-f',
+        'webm', // Output format
+        '-c:a',
+        'libopus', // Codec (native for webm)
+        '-b:a',
+        '32k', // Bitrate: 32k is cost/size efficient for speech
+        'pipe:1', // Write to stdout
       ]);
 
       const webmChunks: Buffer[] = [];
@@ -48,7 +59,9 @@ export class TtsService {
 
       ffmpegProcess.on('close', (code) => {
         if (code !== 0) {
-          this.logger.error(`ffmpeg exited with code ${code}. Error: ${errorData}`);
+          this.logger.error(
+            `ffmpeg exited with code ${code}. Error: ${errorData}`,
+          );
           return reject(new Error('ffmpeg conversion failed'));
         }
         resolve(Buffer.concat(webmChunks));
@@ -63,7 +76,11 @@ export class TtsService {
     });
   }
 
-  async generateAudio(text: string, accent: Accent = Accent.US, gender: Gender = Gender.FEMALE): Promise<string> {
+  async generateAudio(
+    text: string,
+    accent: Accent = Accent.US,
+    gender: Gender = Gender.FEMALE,
+  ): Promise<string> {
     const voiceName = this.getVoiceName(accent, gender);
     const languageCode = accent === Accent.US ? 'en-US' : 'en-GB';
 
@@ -78,7 +95,9 @@ export class TtsService {
       const [response] = await this.client.synthesizeSpeech(request);
 
       if (!response.audioContent) {
-        throw new InternalServerErrorException('Google TTS returned empty audio payload');
+        throw new InternalServerErrorException(
+          'Google TTS returned empty audio payload',
+        );
       }
 
       // Convert the raw WAV payload directly into WEBM (Opus) via ffmpeg

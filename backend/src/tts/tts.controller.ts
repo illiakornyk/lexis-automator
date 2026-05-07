@@ -13,17 +13,28 @@ export class TtsController {
   @ApiBody({ type: GenerateTtsDto })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'The audio has been successfully generated as a base64 string.',
+    description:
+      'The audio has been successfully generated as a base64 string.',
     schema: {
       type: 'object',
       properties: {
-        audioBase64: { type: 'string', example: 'GkXfo59ChoEBQveBAULygQRC84EIQoKEd2Vib...' }
-      }
-    }
+        audioBase64: {
+          type: 'string',
+          example: 'GkXfo59ChoEBQveBAULygQRC84EIQoKEd2Vib...',
+        },
+      },
+    },
   })
-  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, description: 'Failed to generate audio.' })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'Failed to generate audio.',
+  })
   async generateAudio(@Body() dto: GenerateTtsDto) {
-    const audioBase64 = await this.ttsService.generateAudio(dto.text, dto.accent, dto.gender);
+    const audioBase64 = await this.ttsService.generateAudio(
+      dto.text,
+      dto.accent,
+      dto.gender,
+    );
     return { audioBase64 };
   }
 }

@@ -27,10 +27,18 @@ export class AiService {
       'openai/gpt-4o-mini';
   }
 
-  async generateExample(word: string, definition: string, apiKey?: string): Promise<string> {
-    this.logger.log(`generateExample called — word: "${word}", definition length: ${definition?.length}`);
+  async generateExample(
+    word: string,
+    definition: string,
+    apiKey?: string,
+  ): Promise<string> {
+    this.logger.log(
+      `generateExample called — word: "${word}", definition length: ${definition?.length}`,
+    );
     if (!word || !definition) {
-      throw new InternalServerErrorException('word and definition are required');
+      throw new InternalServerErrorException(
+        'word and definition are required',
+      );
     }
     try {
       let client = this.openai;

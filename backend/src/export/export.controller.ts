@@ -1,4 +1,11 @@
-import { Controller, Post, Body, Res, StreamableFile, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  StreamableFile,
+  UseGuards,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ExportService } from './export.service';
@@ -34,7 +41,8 @@ export class ExportController {
     @Body() exportDto: ExportAnkiDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
-    const { fileStream, cleanup } = await this.exportService.generateApkg(exportDto);
+    const { fileStream, cleanup } =
+      await this.exportService.generateApkg(exportDto);
     res.set({
       'Content-Type': 'application/octet-stream',
       'Content-Disposition': `attachment; filename="${toSafeFilename(exportDto.deckName)}.apkg"`,
@@ -52,7 +60,8 @@ export class ExportController {
     @Body() dto: ExportDeckDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
-    const { fileStream, cleanup, deckName } = await this.exportService.exportDeck(dto);
+    const { fileStream, cleanup, deckName } =
+      await this.exportService.exportDeck(dto);
     res.set({
       'Content-Type': 'application/octet-stream',
       'Content-Disposition': `attachment; filename="${toSafeFilename(deckName)}.apkg"`,
@@ -63,9 +72,17 @@ export class ExportController {
 
   @Post('decks/archive')
   @UseGuards(SupabaseAuthGuard)
-  @ApiOperation({ summary: 'Export multiple decks as a ZIP archive of APKG files' })
-  @ApiResponse({ status: 200, description: 'Returns a .zip stream containing one .apkg per deck' })
-  @ApiResponse({ status: 400, description: 'No valid decks found for the given IDs' })
+  @ApiOperation({
+    summary: 'Export multiple decks as a ZIP archive of APKG files',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns a .zip stream containing one .apkg per deck',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'No valid decks found for the given IDs',
+  })
   async exportDecksArchive(
     @Body() dto: ExportDecksArchiveDto,
     @Res({ passthrough: true }) res: Response,

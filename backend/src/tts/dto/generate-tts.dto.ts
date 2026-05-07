@@ -12,7 +12,10 @@ export enum Gender {
 }
 
 export class GenerateTtsDto {
-  @ApiProperty({ description: 'The text to convert to speech', example: 'Hello world' })
+  @ApiProperty({
+    description: 'The text to convert to speech',
+    example: 'Hello world',
+  })
   @IsString()
   @IsNotEmpty()
   text: string;

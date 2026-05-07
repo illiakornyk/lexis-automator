@@ -1,16 +1,29 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database.types';
 
-type FieldType = 'Word' | 'PartOfSpeech' | 'Phonetic' | 'Definition' | 'Example' | 'Audio' | 'Image' | 'TypeIn' | 'Cloze';
+type FieldType =
+  | 'Word'
+  | 'PartOfSpeech'
+  | 'Phonetic'
+  | 'Definition'
+  | 'Example'
+  | 'Audio'
+  | 'Image'
+  | 'TypeIn'
+  | 'Cloze';
 
 const FIELD_SNIPPETS: Record<FieldType, string> = {
   Word: '<div style="text-align:center; font-size: 24px; font-weight: bold;">{{Word}}</div>',
-  PartOfSpeech: '<span style="color: gray; padding-right: 8px;">{{PartOfSpeech}}</span>',
+  PartOfSpeech:
+    '<span style="color: gray; padding-right: 8px;">{{PartOfSpeech}}</span>',
   Phonetic: '<span style="color: gray;">{{Phonetic}}</span>',
-  Definition: '<div style="text-align:left; font-size: 18px; margin-top: 12px; margin-bottom: 12px;"><b>Definition:</b> {{Definition}}</div>',
-  Example: '<div style="text-align:left; font-style: italic; color: #555; margin-top: 12px; margin-bottom: 12px;">"{{Example}}"</div>',
+  Definition:
+    '<div style="text-align:left; font-size: 18px; margin-top: 12px; margin-bottom: 12px;"><b>Definition:</b> {{Definition}}</div>',
+  Example:
+    '<div style="text-align:left; font-style: italic; color: #555; margin-top: 12px; margin-bottom: 12px;">"{{Example}}"</div>',
   Audio: '<div style="margin-top: 16px;">{{Audio}}</div>',
-  Image: '<div style="margin-top: 12px; text-align: center;">{{#Image}}{{Image}}{{/Image}}</div>',
+  Image:
+    '<div style="margin-top: 12px; text-align: center;">{{#Image}}{{Image}}{{/Image}}</div>',
   TypeIn: '<div style="margin-top: 16px;">{{type:Word}}</div>',
   Cloze: '{{cloze:Text}}',
 };
@@ -33,13 +46,28 @@ const DEFAULT_TEMPLATES_MAP: Record<string, TemplateRaw> = {
     name: 'Production',
     isCloze: false,
     frontFields: ['Definition'],
-    backFields: ['Word', 'PartOfSpeech', 'Phonetic', 'Example', 'Image', 'Audio'],
+    backFields: [
+      'Word',
+      'PartOfSpeech',
+      'Phonetic',
+      'Example',
+      'Image',
+      'Audio',
+    ],
   },
   'default-type-in': {
     name: 'Type-In',
     isCloze: false,
     frontFields: ['Definition', 'TypeIn'],
-    backFields: ['Definition', 'TypeIn', 'PartOfSpeech', 'Phonetic', 'Example', 'Image', 'Audio'],
+    backFields: [
+      'Definition',
+      'TypeIn',
+      'PartOfSpeech',
+      'Phonetic',
+      'Example',
+      'Image',
+      'Audio',
+    ],
   },
   'default-cloze': {
     name: 'Cloze',
@@ -81,7 +109,10 @@ export async function resolveAndCompileTemplates(
 
   const customIds = templateIds.filter((id) => !id.startsWith('default-'));
   if (customIds.length > 0) {
-    const { data } = await supabase.from('templates').select('*').in('id', customIds);
+    const { data } = await supabase
+      .from('templates')
+      .select('*')
+      .in('id', customIds);
     if (data) {
       for (const row of data) {
         resultMap.set(
