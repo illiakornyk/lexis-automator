@@ -93,27 +93,28 @@ def _build_model_entries(templates: list[CustomTemplateSchema]) -> list[ModelEnt
     return entries
 
 
-def _prepare_media(card: CardData, media_files: list[str]) -> dict[str, str]:
+def _prepare_media(card: CardData) -> tuple[dict[str, str], list[str]]:
+    collected: list[str] = []
+
     audio_field = ""
     if card.audio_path and os.path.exists(card.audio_path):
-        media_files.append(card.audio_path)
+        collected.append(card.audio_path)
         audio_field = f"[sound:{os.path.basename(card.audio_path)}]"
 
     image_field = ""
     if card.image_path and os.path.exists(card.image_path):
-        media_files.append(card.image_path)
+        collected.append(card.image_path)
         img_filename = os.path.basename(card.image_path)
         image_field = f'<img src="{img_filename}" style="max-width:300px; max-height:200px;">'
 
-    return {'audio': audio_field, 'image': image_field}
+    return {'audio': audio_field, 'image': image_field}, collected
 
 
 def _add_cloze_note(deck: genanki.Deck, card: CardData, model: genanki.Model, audio_field: str) -> None:
-    if card.word.lower() not in card.example.lower():
+    pattern = re.compile(rf'\b{re.escape(card.word)}\b', re.IGNORECASE)
+    if not pattern.search(card.example):
         return
-    cloze_text = re.compile(re.escape(card.word), re.IGNORECASE).sub(
-        f"{{{{c1::{card.word}}}}}", card.example, count=1
-    )
+    cloze_text = pattern.sub(f"{{{{c1::{card.word}}}}}", card.example, count=1)
     extra_info = (
         f"<div style='text-align:left; font-size: 16px;'>"
         f"<b>{card.word}</b> ({card.partOfSpeech}) &bull; {card.phonetic}"
@@ -129,7 +130,8 @@ def create_anki_package(req: DeckRequest) -> str:
     media_files: list[str] = []
 
     for card in req.cards:
-        extra = _prepare_media(card, media_files)
+        extra, card_media = _prepare_media(card)
+        media_files.extend(card_media)
         for entry in entries:
             if entry.template.is_cloze:
                 _add_cloze_note(deck, card, entry.model, extra['audio'])
