@@ -14,11 +14,15 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Lexis Automator API')
-    .setDescription(
-      'API for generating Anki cards and fetching dictionary data',
-    )
+    .setDescription('API for generating Anki cards and fetching dictionary data')
     .setVersion('1.0')
+    .addBearerAuth()
     .addTag('dictionary')
+    .addTag('ai')
+    .addTag('images')
+    .addTag('tts')
+    .addTag('export')
+    .addTag('export-jobs')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

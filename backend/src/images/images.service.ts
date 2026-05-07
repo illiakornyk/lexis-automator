@@ -2,10 +2,11 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '@/types/database.types';
+import type { Database } from '@/types/database.types';
 import { SupabaseService } from '@/supabase/supabase.service';
 import { firstValueFrom } from 'rxjs';
 import * as path from 'path';
+import type { ImageSearchResult } from './images.types';
 
 const MAX_IMAGE_BYTES = 1 * 1024 * 1024;
 const BUCKET = 'card-images';
@@ -31,14 +32,14 @@ export class ImagesService {
 
   constructor(
     private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
+    configService: ConfigService,
     supabaseService: SupabaseService,
   ) {
     this.supabase = supabaseService.client;
-    this.pixabayKey = this.configService.getOrThrow('PIXABAY_API_KEY');
+    this.pixabayKey = configService.getOrThrow('PIXABAY_API_KEY');
   }
 
-  async searchImages(query: string, page = 1) {
+  async searchImages(query: string, page = 1): Promise<ImageSearchResult[]> {
     const url = `https://pixabay.com/api/?key=${this.pixabayKey}&q=${encodeURIComponent(query)}&image_type=photo&safesearch=true&per_page=20&page=${page}`;
     const resp = await firstValueFrom(this.httpService.get(url));
     return (resp.data.hits as any[]).map((h) => ({

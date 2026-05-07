@@ -18,6 +18,10 @@ class EnvironmentVariables {
   @IsOptional()
   NODE_ENV: NodeEnv = NodeEnv.Development;
 
+  // Dictionary API
+  @IsUrl({ require_tld: false })
+  FREE_DICTIONARY_API_URL: string;
+
   // Supabase
   @IsUrl({ require_tld: false })
   SUPABASE_URL: string;
