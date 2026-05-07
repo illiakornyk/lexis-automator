@@ -63,6 +63,10 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   PORT: string;
+
+  @IsUrl({ require_tld: false })
+  @IsOptional()
+  APP_URL: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

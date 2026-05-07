@@ -1,17 +1,15 @@
 from __future__ import annotations
 
 import os
-import random
 import re
+import secrets
 from dataclasses import dataclass
 from typing import Callable, Optional
 
 import genanki
 
 from schemas import CardData, CustomTemplateSchema, DeckRequest
-
-CARD_CSS = '.card { font-family: arial; font-size: 20px; text-align: center; color: black; background-color: white; }'
-CLOZE_CSS = CARD_CSS + ' .cloze { font-weight: bold; color: blue; }'
+from card_styles import CARD_CSS, CLOZE_CSS
 
 FieldExtractor = Callable[[CardData, dict[str, str]], str]
 
@@ -34,7 +32,7 @@ class ModelEntry:
 
 
 def _generate_model_id() -> int:
-    return random.randrange(1 << 30, 1 << 31)
+    return secrets.randbelow(1 << 31 - 1 << 30) + (1 << 30)
 
 
 def _extract_fields_from_template(qfmt: str, afmt: str) -> list[str]:
@@ -105,7 +103,7 @@ def _prepare_media(card: CardData) -> tuple[dict[str, str], list[str]]:
     if card.image_path and os.path.exists(card.image_path):
         collected.append(card.image_path)
         img_filename = os.path.basename(card.image_path)
-        image_field = f'<img src="{img_filename}" style="max-width:300px; max-height:200px;">'
+        image_field = f'<img src="{img_filename}" class="card-image">'
 
     return {'audio': audio_field, 'image': image_field}, collected
 
@@ -116,8 +114,10 @@ def _add_cloze_note(deck: genanki.Deck, card: CardData, model: genanki.Model, au
         return
     cloze_text = pattern.sub(f"{{{{c1::{card.word}}}}}", card.example, count=1)
     extra_info = (
-        f"<div style='text-align:left; font-size: 16px;'>"
-        f"<b>{card.word}</b> ({card.partOfSpeech}) &bull; {card.phonetic}"
+        f"<div class='definition'>"
+        f"<span class='word'>{card.word}</span> "
+        f"<span class='part-of-speech'>{card.partOfSpeech}</span> "
+        f"<span class='phonetic'>{card.phonetic}</span>"
         f"<br><br>{card.definition}</div>"
     )
     deck.add_note(genanki.Note(model=model, fields=[cloze_text, extra_info, audio_field]))

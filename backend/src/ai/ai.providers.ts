@@ -40,6 +40,7 @@ export function createAdapter(
   provider: LlmProvider,
   apiKey: string,
   model: string,
+  appUrl?: string,
 ): GenerateExampleFn {
   if (provider === LlmProvider.ANTHROPIC) {
     return anthropicAdapter(new Anthropic({ apiKey }), model);
@@ -48,7 +49,7 @@ export function createAdapter(
   const baseURL = OPENAI_COMPATIBLE_BASE_URLS[provider];
   const defaultHeaders =
     provider === LlmProvider.OPENROUTER
-      ? { 'HTTP-Referer': 'http://localhost:3000', 'X-Title': 'Lexis Automator' }
+      ? { 'HTTP-Referer': appUrl ?? 'http://localhost:3000', 'X-Title': 'Lexis Automator' }
       : undefined;
 
   return openaiAdapter(new OpenAI({ apiKey, baseURL, defaultHeaders }), model);

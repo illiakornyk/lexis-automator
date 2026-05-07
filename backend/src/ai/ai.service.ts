@@ -13,7 +13,8 @@ export class AiService {
     const provider = configService.getOrThrow<LlmProvider>('LLM_PROVIDER');
     const apiKey = configService.getOrThrow<string>('LLM_API_KEY');
     const model = configService.get<string>('LLM_MODEL') ?? DEFAULT_MODELS[provider];
-    this.adapter = createAdapter(provider, apiKey, model);
+    const appUrl = configService.get<string>('APP_URL');
+    this.adapter = createAdapter(provider, apiKey, model, appUrl);
   }
 
   async generateExample(
