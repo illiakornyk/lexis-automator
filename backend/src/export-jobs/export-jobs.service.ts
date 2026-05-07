@@ -40,24 +40,27 @@ export class ExportJobsService {
       );
     }
 
+    // Batch-fetch all requested decks owned by this user in one query
+    const { data: decks } = await this.supabase
+      .from('decks')
+      .select('id, name')
+      .in('id', dto.deckIds)
+      .eq('user_id', userId);
+
+    const deckMap = new Map((decks ?? []).map((d) => [d.id, d.name]));
+
     const created: Database['public']['Tables']['export_jobs']['Row'][] = [];
 
     for (const deckId of dto.deckIds) {
-      const { data: deck } = await this.supabase
-        .from('decks')
-        .select('name')
-        .eq('id', deckId)
-        .eq('user_id', userId)
-        .single();
-
-      if (!deck) continue;
+      const deckName = deckMap.get(deckId);
+      if (!deckName) continue;
 
       const { data: job, error } = await this.supabase
         .from('export_jobs')
         .insert({
           user_id: userId,
           deck_id: deckId,
-          deck_name: deck.name,
+          deck_name: deckName,
           status: 'pending',
           template_ids: dto.templateIds,
           accent: dto.accent,
@@ -226,23 +229,29 @@ export class ExportJobsService {
   async cleanupExpired() {
     this.logger.log('Running export jobs cleanup...');
 
+    const now = new Date().toISOString();
+
     const { data: expired } = await this.supabase
       .from('export_jobs')
       .select('id, file_path')
-      .lt('expires_at', new Date().toISOString());
+      .lt('expires_at', now);
 
-    for (const job of expired ?? []) {
-      if (job.file_path) {
-        await this.supabase.storage.from('exports').remove([job.file_path]);
-      }
+    const expiredRows = expired ?? [];
+
+    const filePaths = expiredRows
+      .map((j) => j.file_path)
+      .filter((p): p is string => p !== null);
+
+    if (filePaths.length > 0) {
+      await this.supabase.storage.from('exports').remove(filePaths);
     }
 
-    if ((expired ?? []).length > 0) {
+    if (expiredRows.length > 0) {
       await this.supabase
         .from('export_jobs')
         .delete()
-        .lt('expires_at', new Date().toISOString());
-      this.logger.log(`Deleted ${expired!.length} expired export jobs`);
+        .in('id', expiredRows.map((j) => j.id));
+      this.logger.log(`Deleted ${expiredRows.length} expired export jobs`);
     }
 
     const stuckThreshold = new Date(Date.now() - 10 * 60 * 1000).toISOString();
