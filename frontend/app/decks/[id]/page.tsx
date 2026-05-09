@@ -359,6 +359,7 @@ export default function DeckDetailPage({
           open={!!pickerCardId}
           onOpenChange={(open) => { if (!open) setPickerCardId(null); }}
           cardId={pickerCardId}
+          word={cards.find((c) => c.id === pickerCardId)?.word ?? ""}
           currentImagePath={cards.find((c) => c.id === pickerCardId)?.imagePath ?? null}
           onImageSaved={(imagePath) => handleImageSaved(pickerCardId, imagePath)}
         />

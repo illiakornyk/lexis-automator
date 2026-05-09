@@ -54,12 +54,23 @@ CARD_CSS = """
     max-width: 480px;
 }
 
+.card-image-wrap {
+    margin: 12px auto;
+    display: inline-block;
+}
+
 .card-image {
     max-width: 300px;
     max-height: 200px;
     border-radius: 8px;
-    margin: 12px auto;
     display: block;
+}
+
+.card-image-credit {
+    font-size: 10px;
+    color: #9ca3af;
+    text-align: right;
+    margin-top: 2px;
 }
 
 .nightMode .card {

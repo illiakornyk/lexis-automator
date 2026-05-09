@@ -102,7 +102,14 @@ def _prepare_media(card: CardData) -> tuple[dict[str, str], list[str]]:
     image_field = ""
     if card.image_path and Path(card.image_path).exists():
         collected.append(card.image_path)
-        image_field = f'<img src="{Path(card.image_path).name}" class="card-image">'
+        image_field = (
+            f'<figure class="card-image-wrap">'
+            f'<img src="{Path(card.image_path).name}" class="card-image"'
+            f' alt="Source: Pixabay (pixabay.com)"'
+            f' title="Source: Pixabay (pixabay.com)">'
+            f'<figcaption class="card-image-credit">Source: Pixabay</figcaption>'
+            f'</figure>'
+        )
 
     return {'audio': audio_field, 'image': image_field}, collected
 
