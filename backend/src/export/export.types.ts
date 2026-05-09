@@ -2,7 +2,7 @@ import type { CardDataDto } from './dto/export-anki.dto';
 import type { CompiledTemplate } from './utils/anki-compiler';
 
 export interface MappedCard extends CardDataDto {
-  imagePath: string | null;
+  imagePath?: string | null;
 }
 
 export interface AnkiCardPayload {

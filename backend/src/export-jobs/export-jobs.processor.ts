@@ -29,8 +29,10 @@ export class ExportJobsProcessor extends WorkerHost {
       job.attemptsMade + 1,
     );
 
-    if (!exportJob || exportJob.status === 'cancelled') {
-      this.logger.log(`Job ${jobId} was cancelled before processing started.`);
+    if (!exportJob) {
+      this.logger.log(
+        `Job ${jobId} is no longer pending/processing (cancelled, done, or failed). Skipping.`,
+      );
       return;
     }
 
@@ -69,14 +71,26 @@ export class ExportJobsProcessor extends WorkerHost {
         buffer,
       );
 
-      await this.exportJobsService.markDone(jobId, storagePath);
-      this.logger.log(`Job ${jobId} done → ${storagePath}`);
+      const marked = await this.exportJobsService.markDone(jobId, storagePath);
+      if (marked) {
+        this.logger.log(`Job ${jobId} done → ${storagePath}`);
+      } else {
+        this.logger.log(
+          `Job ${jobId} was cancelled before completion; uploaded file kept at ${storagePath}.`,
+        );
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       const isLastAttempt = job.attemptsMade >= (job.opts.attempts ?? 1) - 1;
       if (isLastAttempt) {
-        await this.exportJobsService.markFailed(jobId, message);
-        this.logger.error(`Job ${jobId} permanently failed: ${message}`);
+        const marked = await this.exportJobsService.markFailed(jobId, message);
+        if (marked) {
+          this.logger.error(`Job ${jobId} permanently failed: ${message}`);
+        } else {
+          this.logger.log(
+            `Job ${jobId} failed but was already cancelled or completed; not overwriting status.`,
+          );
+        }
       } else {
         this.logger.warn(
           `Job ${jobId} failed (attempt ${job.attemptsMade + 1}), will retry.`,

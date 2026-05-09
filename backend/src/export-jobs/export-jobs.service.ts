@@ -75,7 +75,7 @@ export class ExportJobsService {
       throw new BadRequestException('Failed to create export jobs');
     }
 
-    await Promise.all(
+    const enqueueResults = await Promise.allSettled(
       created.map((job) =>
         this.queue.add(
           'process',
@@ -85,7 +85,27 @@ export class ExportJobsService {
       ),
     );
 
-    return created;
+    const failedToEnqueue = enqueueResults
+      .map((r, i) => (r.status === 'rejected' ? { job: created[i], reason: r.reason } : null))
+      .filter((x): x is { job: typeof created[number]; reason: unknown } => x !== null);
+
+    if (failedToEnqueue.length > 0) {
+      this.logger.error(
+        `Failed to enqueue ${failedToEnqueue.length} of ${created.length} export jobs`,
+      );
+      const failedIds = failedToEnqueue.map((f) => f.job.id);
+      await this.supabase
+        .from('export_jobs')
+        .update({
+          status: 'failed',
+          error_message: 'Failed to enqueue job in worker queue',
+          completed_at: new Date().toISOString(),
+        })
+        .in('id', failedIds);
+    }
+
+    const failedIdSet = new Set(failedToEnqueue.map((f) => f.job.id));
+    return created.filter((job) => !failedIdSet.has(job.id));
   }
 
   async getJobs(userId: string) {
@@ -185,27 +205,40 @@ export class ExportJobsService {
         attempts: attempt,
       })
       .eq('id', jobId)
+      .in('status', ['pending', 'processing'])
       .select()
-      .single();
+      .maybeSingle();
     return data;
   }
 
-  async markDone(jobId: string, filePath: string) {
-    await this.supabase
+  async markDone(jobId: string, filePath: string): Promise<boolean> {
+    const { data } = await this.supabase
       .from('export_jobs')
       .update({
         status: 'done',
         file_path: filePath,
         completed_at: new Date().toISOString(),
       })
-      .eq('id', jobId);
+      .eq('id', jobId)
+      .eq('status', 'processing')
+      .select('id')
+      .maybeSingle();
+    return data !== null;
   }
 
-  async markFailed(jobId: string, errorMessage: string) {
-    await this.supabase
+  async markFailed(jobId: string, errorMessage: string): Promise<boolean> {
+    const { data } = await this.supabase
       .from('export_jobs')
-      .update({ status: 'failed', error_message: errorMessage })
-      .eq('id', jobId);
+      .update({
+        status: 'failed',
+        error_message: errorMessage,
+        completed_at: new Date().toISOString(),
+      })
+      .eq('id', jobId)
+      .eq('status', 'processing')
+      .select('id')
+      .maybeSingle();
+    return data !== null;
   }
 
   async removeJob(jobId: string, userId: string): Promise<void> {

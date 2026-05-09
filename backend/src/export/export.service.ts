@@ -184,7 +184,7 @@ export class ExportService {
     try {
       const apkgPath = await this.buildApkgFile(
         exportDto.deckName,
-        exportDto.cards as MappedCard[],
+        exportDto.cards,
         exportDto.ttsSettings,
         exportDto.templates,
         tempDir,
