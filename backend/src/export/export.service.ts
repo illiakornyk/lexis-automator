@@ -21,6 +21,32 @@ import type {
   DeckExportResult,
 } from './export.types';
 
+type SavedCardRow = Database['public']['Tables']['saved_cards']['Row'];
+
+function mapRawCard(c: SavedCardRow): MappedCard {
+  return {
+    word: c.word,
+    partOfSpeech: c.part_of_speech,
+    phonetic: c.phonetic || '',
+    definition: c.definition,
+    example: c.example || '',
+    imagePath: c.image_path ?? null,
+  };
+}
+
+interface TempDirHandle {
+  dir: string;
+  cleanup: () => Promise<void>;
+}
+
+async function createTempDir(): Promise<TempDirHandle> {
+  const dir = path.join(process.cwd(), 'temp', `export-${uuidv4()}`);
+  await fs.mkdir(dir, { recursive: true });
+  const cleanup = () =>
+    fs.rm(dir, { recursive: true, force: true }).catch(() => {});
+  return { dir, cleanup };
+}
+
 @Injectable()
 export class ExportService {
   private readonly logger = new Logger(ExportService.name);
@@ -33,19 +59,6 @@ export class ExportService {
     supabaseService: SupabaseService,
   ) {
     this.supabase = supabaseService.client;
-  }
-
-  private mapRawCard(
-    c: Database['public']['Tables']['saved_cards']['Row'],
-  ): MappedCard {
-    return {
-      word: c.word,
-      partOfSpeech: c.part_of_speech,
-      phonetic: c.phonetic || '',
-      definition: c.definition,
-      example: c.example || '',
-      imagePath: c.image_path ?? null,
-    };
   }
 
   private async buildApkgFile(
@@ -138,16 +151,13 @@ export class ExportService {
 
     if (!rawCards?.length) throw new Error(`Deck "${deck.name}" has no cards`);
 
-    const cards = rawCards.map((c) => this.mapRawCard(c));
+    const cards = rawCards.map(mapRawCard);
     const templates = await resolveAndCompileTemplates(
       templateIds,
       this.supabase,
     );
 
-    const tempDir = path.join(process.cwd(), 'temp', `export-${uuidv4()}`);
-    await fs.mkdir(tempDir, { recursive: true });
-    const cleanup = () =>
-      fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    const { dir: tempDir, cleanup } = await createTempDir();
 
     const apkgPath = await this.buildApkgFile(
       deck.name,
@@ -169,8 +179,7 @@ export class ExportService {
   }
 
   async generateApkg(exportDto: ExportAnkiDto) {
-    const tempDir = path.join(process.cwd(), 'temp', `export-${uuidv4()}`);
-    await fs.mkdir(tempDir, { recursive: true });
+    const { dir: tempDir, cleanup } = await createTempDir();
 
     try {
       const apkgPath = await this.buildApkgFile(
@@ -181,11 +190,9 @@ export class ExportService {
         tempDir,
       );
       const fileStream = createReadStream(apkgPath);
-      const cleanup = () =>
-        fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
       return { fileStream, cleanup };
     } catch (error) {
-      await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      await cleanup();
       this.logger.error('Failed to generate APKG:', error);
       throw error;
     }

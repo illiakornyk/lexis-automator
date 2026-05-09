@@ -47,15 +47,11 @@ export class ExportJobsService {
 
     const deckMap = new Map((decks ?? []).map((d) => [d.id, d.name]));
 
-    const created: Database['public']['Tables']['export_jobs']['Row'][] = [];
-
-    for (const deckId of dto.deckIds) {
-      const deckName = deckMap.get(deckId);
-      if (!deckName) continue;
-
-      const { data: job, error } = await this.supabase
-        .from('export_jobs')
-        .insert({
+    const rows = dto.deckIds
+      .map((deckId) => {
+        const deckName = deckMap.get(deckId);
+        if (!deckName) return null;
+        return {
           user_id: userId,
           deck_id: deckId,
           deck_name: deckName,
@@ -63,25 +59,31 @@ export class ExportJobsService {
           template_ids: dto.templateIds,
           accent: dto.accent,
           gender: dto.gender,
-        })
-        .select()
-        .single();
+        };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null);
 
-      if (error || !job) {
-        this.logger.error(
-          `Failed to create job for deck ${deckId}: ${error?.message}`,
-        );
-        continue;
-      }
+    if (rows.length === 0) return [];
 
-      await this.queue.add(
-        'process',
-        { jobId: job.id },
-        { attempts: 3, backoff: { type: 'exponential', delay: 10000 } },
-      );
+    const { data: created, error } = await this.supabase
+      .from('export_jobs')
+      .insert(rows)
+      .select();
 
-      created.push(job);
+    if (error || !created) {
+      this.logger.error(`Failed to create export jobs: ${error?.message}`);
+      throw new BadRequestException('Failed to create export jobs');
     }
+
+    await Promise.all(
+      created.map((job) =>
+        this.queue.add(
+          'process',
+          { jobId: job.id },
+          { attempts: 3, backoff: { type: 'exponential', delay: 10000 } },
+        ),
+      ),
+    );
 
     return created;
   }
