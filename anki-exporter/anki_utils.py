@@ -32,7 +32,12 @@ class ModelEntry:
 
 
 def _generate_model_id() -> int:
-    return secrets.randbelow(1 << 31 - 1 << 30) + (1 << 30)
+    return secrets.randbelow((1 << 31) - (1 << 30)) + (1 << 30)
+
+
+# Matches {{Field}}, {{#Field}}, {{^Field}}, and any number of `filter:` modifiers
+# (e.g. {{type:Field}}, {{cloze:Field}}, {{tts en_US:Field}}).
+TEMPLATE_FIELD_RE = re.compile(r'\{\{[#/^]?(?:[^{}:]+:)*(\w+)\}\}')
 
 
 def _extract_fields_from_template(qfmt: str, afmt: str) -> list[str]:
@@ -40,16 +45,9 @@ def _extract_fields_from_template(qfmt: str, afmt: str) -> list[str]:
     seen: set[str] = set()
     fields: list[str] = []
 
-    for m in re.finditer(r'\{\{[#/^]?(\w+)\}\}', combined):
+    for m in TEMPLATE_FIELD_RE.finditer(combined):
         name = m.group(1)
         if name != 'FrontSide' and name in FIELD_VALUE_MAP and name not in seen:
-            seen.add(name)
-            fields.append(name)
-
-    # {{type:FieldName}} reuses an existing field for type-in cards
-    for m in re.finditer(r'\{\{type:(\w+)\}\}', combined):
-        name = m.group(1)
-        if name in FIELD_VALUE_MAP and name not in seen:
             seen.add(name)
             fields.append(name)
 

@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import logging
+
 from fastapi import FastAPI, HTTPException
 from schemas import DeckRequest, GenerateResponse
 from anki_utils import create_anki_package
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Anki Exporter Service")
 
@@ -18,4 +22,5 @@ async def generate_deck(req: DeckRequest) -> GenerateResponse:
         out_file = create_anki_package(req)
         return GenerateResponse(status="success", file_path=out_file)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        logger.exception("Failed to generate Anki package for deck %s", req.deck_uuid)
+        raise HTTPException(status_code=500, detail="Failed to generate Anki package") from e
