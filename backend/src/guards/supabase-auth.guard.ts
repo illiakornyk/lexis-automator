@@ -29,7 +29,7 @@ export class SupabaseAuthGuard implements CanActivate {
       throw new UnauthorizedException('Invalid or expired token');
     }
 
-    request.user = { sub: user.id, email: user.email };
+    request.user = { sub: user.id };
     return true;
   }
 }

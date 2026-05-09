@@ -67,6 +67,11 @@ class EnvironmentVariables {
   @IsUrl({ require_tld: false })
   @IsOptional()
   APP_URL: string;
+
+  // Comma-separated list of allowed CORS origins. Defaults to http://localhost:3001 if unset.
+  @IsString()
+  @IsOptional()
+  CORS_ORIGINS: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {
