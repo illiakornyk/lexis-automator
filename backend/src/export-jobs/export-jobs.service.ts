@@ -13,6 +13,7 @@ import { SupabaseService } from '@/supabase/supabase.service';
 import { CreateExportJobsDto } from './dto/create-export-jobs.dto';
 
 import { EXPORT_JOBS_QUEUE, MAX_DONE_SLOTS, STUCK_JOB_TIMEOUT_MS } from './export-jobs.constants';
+import { JOB_STATUS } from './export-jobs.types';
 
 @Injectable()
 export class ExportJobsService {
@@ -31,7 +32,7 @@ export class ExportJobsService {
       .from('export_jobs')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
-      .eq('status', 'done');
+      .eq('status', JOB_STATUS.DONE);
 
     if ((count ?? 0) >= MAX_DONE_SLOTS) {
       throw new BadRequestException(
@@ -58,7 +59,7 @@ export class ExportJobsService {
       user_id: userId,
       deck_id: deckId,
       deck_name: deckMap.get(deckId)!,
-      status: 'pending',
+      status: JOB_STATUS.PENDING,
       template_ids: dto.templateIds,
       accent: dto.accent,
       gender: dto.gender,
@@ -96,7 +97,7 @@ export class ExportJobsService {
       await this.supabase
         .from('export_jobs')
         .update({
-          status: 'failed',
+          status: JOB_STATUS.FAILED,
           error_message: 'Failed to enqueue job in worker queue',
           completed_at: new Date().toISOString(),
         })
@@ -134,13 +135,16 @@ export class ExportJobsService {
       .single();
 
     if (!job) throw new NotFoundException('Job not found');
-    if (!['pending', 'processing'].includes(job.status)) {
+    if (
+      job.status !== JOB_STATUS.PENDING &&
+      job.status !== JOB_STATUS.PROCESSING
+    ) {
       throw new BadRequestException(
         'Can only cancel pending or processing jobs',
       );
     }
 
-    if (job.status === 'pending') {
+    if (job.status === JOB_STATUS.PENDING) {
       const waiting = await this.queue.getJobs(['waiting', 'delayed']);
       for (const bJob of waiting) {
         if (bJob.data.jobId === jobId) {
@@ -152,7 +156,7 @@ export class ExportJobsService {
 
     await this.supabase
       .from('export_jobs')
-      .update({ status: 'cancelled' })
+      .update({ status: JOB_STATUS.CANCELLED })
       .eq('id', jobId)
       .eq('user_id', userId);
   }
@@ -183,7 +187,7 @@ export class ExportJobsService {
       .single();
 
     if (!job) throw new NotFoundException('Job not found');
-    if (job.status !== 'done' || !job.file_path) {
+    if (job.status !== JOB_STATUS.DONE || !job.file_path) {
       throw new BadRequestException('Export is not ready for download');
     }
 
@@ -199,12 +203,12 @@ export class ExportJobsService {
     const { data } = await this.supabase
       .from('export_jobs')
       .update({
-        status: 'processing',
+        status: JOB_STATUS.PROCESSING,
         started_at: new Date().toISOString(),
         attempts: attempt,
       })
       .eq('id', jobId)
-      .in('status', ['pending', 'processing'])
+      .in('status', [JOB_STATUS.PENDING, JOB_STATUS.PROCESSING])
       .select()
       .maybeSingle();
     return data;
@@ -214,12 +218,12 @@ export class ExportJobsService {
     const { data } = await this.supabase
       .from('export_jobs')
       .update({
-        status: 'done',
+        status: JOB_STATUS.DONE,
         file_path: filePath,
         completed_at: new Date().toISOString(),
       })
       .eq('id', jobId)
-      .eq('status', 'processing')
+      .eq('status', JOB_STATUS.PROCESSING)
       .select('id')
       .maybeSingle();
     return data !== null;
@@ -229,12 +233,12 @@ export class ExportJobsService {
     const { data } = await this.supabase
       .from('export_jobs')
       .update({
-        status: 'failed',
+        status: JOB_STATUS.FAILED,
         error_message: errorMessage,
         completed_at: new Date().toISOString(),
       })
       .eq('id', jobId)
-      .eq('status', 'processing')
+      .eq('status', JOB_STATUS.PROCESSING)
       .select('id')
       .maybeSingle();
     return data !== null;
@@ -244,7 +248,10 @@ export class ExportJobsService {
     const job = await this.getJob(jobId);
     if (!job) return;
 
-    if (job.status === 'pending' || job.status === 'processing') {
+    if (
+      job.status === JOB_STATUS.PENDING ||
+      job.status === JOB_STATUS.PROCESSING
+    ) {
       await this.cancelJob(jobId, userId);
     } else {
       await this.deleteJob(jobId, userId);
@@ -301,11 +308,11 @@ export class ExportJobsService {
     const { data: stuck } = await this.supabase
       .from('export_jobs')
       .update({
-        status: 'failed',
+        status: JOB_STATUS.FAILED,
         error_message: 'Job timed out — worker did not finish in the expected time',
         completed_at: new Date().toISOString(),
       })
-      .eq('status', 'processing')
+      .eq('status', JOB_STATUS.PROCESSING)
       .lt('started_at', stuckThreshold)
       .select('id');
 
