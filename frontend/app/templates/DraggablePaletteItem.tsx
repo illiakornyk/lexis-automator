@@ -1,6 +1,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { GripVertical } from "lucide-react";
 import type { FieldType } from "@/lib/types/template";
+import { FIELD_EMOJI } from "./fieldMeta";
 
 interface DraggablePaletteItemProps {
   type: FieldType;
@@ -25,6 +26,7 @@ export function DraggablePaletteItem({ type }: DraggablePaletteItemProps) {
       }`}
     >
       <GripVertical size={18} className="text-slate-400" />
+      <span className="text-base leading-none">{FIELD_EMOJI[type]}</span>
       <span className="font-medium text-slate-700">{type}</span>
     </div>
   );

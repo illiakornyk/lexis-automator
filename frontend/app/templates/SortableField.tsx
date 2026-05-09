@@ -2,6 +2,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, X } from "lucide-react";
 import type { FieldType } from "@/lib/types/template";
+import { FIELD_EMOJI } from "./fieldMeta";
 
 interface SortableFieldProps {
   id: string;
@@ -39,6 +40,7 @@ export function SortableField({ id, type, onRemove }: SortableFieldProps) {
         >
           <GripVertical size={18} />
         </button>
+        <span className="text-base leading-none">{FIELD_EMOJI[type]}</span>
         <span className="font-medium text-slate-700">{type}</span>
       </div>
       <button
