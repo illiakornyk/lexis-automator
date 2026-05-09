@@ -1,10 +1,13 @@
-import { Controller, Get, Param, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { Controller, Get, Param, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { DictionaryService } from './dictionary.service';
 import { DictionaryEntry } from './classes/dictionary-entry.class';
+import { SupabaseAuthGuard } from '@/guards/supabase-auth.guard';
 
 @ApiTags('dictionary')
+@ApiBearerAuth()
 @Controller('dictionary')
+@UseGuards(SupabaseAuthGuard)
 export class DictionaryController {
   constructor(private readonly dictionaryService: DictionaryService) {}
 

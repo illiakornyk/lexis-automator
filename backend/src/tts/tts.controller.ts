@@ -1,10 +1,13 @@
-import { Controller, Post, Body, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { Controller, Post, Body, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { TtsService } from './tts.service';
 import { GenerateTtsDto } from './dto/generate-tts.dto';
+import { SupabaseAuthGuard } from '@/guards/supabase-auth.guard';
 
 @ApiTags('tts')
+@ApiBearerAuth()
 @Controller('tts')
+@UseGuards(SupabaseAuthGuard)
 export class TtsController {
   constructor(private readonly ttsService: TtsService) {}
 

@@ -1,10 +1,13 @@
-import { Controller, Post, Body, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { Controller, Post, Body, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBody, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AiService } from './ai.service';
 import { GenerateExampleDto } from '@/dictionary/dto/generate-example.dto';
+import { SupabaseAuthGuard } from '@/guards/supabase-auth.guard';
 
 @ApiTags('ai')
+@ApiBearerAuth()
 @Controller('ai')
+@UseGuards(SupabaseAuthGuard)
 export class AiController {
   constructor(private readonly aiService: AiService) {}
 

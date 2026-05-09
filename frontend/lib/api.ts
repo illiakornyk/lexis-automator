@@ -35,7 +35,9 @@ export const LexisApi = {
    * Fetches definitions for a given word from the backend.
    */
   async getDefinition(word: string): Promise<DictionaryEntry[]> {
-    const response = await fetch(`${API_BASE_URL}/dictionary/${encodeURIComponent(word)}`);
+    const response = await fetch(`${API_BASE_URL}/dictionary/${encodeURIComponent(word)}`, {
+      headers: { ...(await getAuthHeaders()) },
+    });
     return handleResponse<DictionaryEntry[]>(response);
   },
 
@@ -43,9 +45,9 @@ export const LexisApi = {
    * Generates an example sentence using the LLM via the backend.
    */
   async generateExample(word: string, definition: string, apiKey?: string | null): Promise<{ example: string }> {
-    const response = await fetch(`${API_BASE_URL}/dictionary/example`, {
+    const response = await fetch(`${API_BASE_URL}/ai/example`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
       body: JSON.stringify({ word, definition, apiKey }),
     });
     return handleResponse<{ example: string }>(response);
@@ -57,7 +59,7 @@ export const LexisApi = {
   async generateAudio(text: string, accent: 'US' | 'GB' = 'US', gender: 'MALE' | 'FEMALE' = 'FEMALE'): Promise<{ audioBase64: string }> {
     const response = await fetch(`${API_BASE_URL}/tts/generate`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
       body: JSON.stringify({ text, accent, gender }),
     });
     return handleResponse<{ audioBase64: string }>(response);
