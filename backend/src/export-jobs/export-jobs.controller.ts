@@ -34,9 +34,18 @@ export class ExportJobsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create export jobs for one or more decks' })
   @ApiBody({ type: CreateExportJobsDto })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'Jobs created and queued.' })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Too many completed exports or invalid input.' })
-  createJobs(@Body() dto: CreateExportJobsDto, @Req() req: AuthenticatedRequest) {
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Jobs created and queued.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Too many completed exports or invalid input.',
+  })
+  createJobs(
+    @Body() dto: CreateExportJobsDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.exportJobsService.createJobs(req.user.sub, dto);
   }
 
@@ -52,8 +61,14 @@ export class ExportJobsController {
   @ApiParam({ name: 'id', description: 'Export job ID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Signed download URL.' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Job not found.' })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Export not ready.' })
-  async getDownloadUrl(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Export not ready.',
+  })
+  async getDownloadUrl(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
     const url = await this.exportJobsService.getDownloadUrl(id, req.user.sub);
     return { url };
   }

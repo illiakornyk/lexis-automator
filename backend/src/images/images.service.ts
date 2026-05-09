@@ -7,10 +7,7 @@ import { SupabaseService } from '@/supabase/supabase.service';
 import { firstValueFrom } from 'rxjs';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import type {
-  ImageSearchResult,
-  PixabaySearchResponse,
-} from './images.types';
+import type { ImageSearchResult, PixabaySearchResponse } from './images.types';
 
 const MAX_IMAGE_BYTES = 1 * 1024 * 1024;
 const BUCKET = 'card-images';

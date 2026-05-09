@@ -35,7 +35,10 @@ export class ExportController {
   @Post('anki')
   @UseGuards(SupabaseAuthGuard)
   @ApiOperation({ summary: 'Generate an APKG file from raw card data' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Returns an .apkg file stream' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Returns an .apkg file stream',
+  })
   async exportAnki(
     @Body() exportDto: ExportAnkiDto,
     @Res({ passthrough: true }) res: Response,

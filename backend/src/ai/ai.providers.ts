@@ -5,7 +5,8 @@ import { EXAMPLE_SYSTEM_PROMPT } from './ai.prompts';
 
 const OPENAI_COMPATIBLE_BASE_URLS: Partial<Record<LlmProvider, string>> = {
   [LlmProvider.OPENROUTER]: 'https://openrouter.ai/api/v1',
-  [LlmProvider.GEMINI]: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+  [LlmProvider.GEMINI]:
+    'https://generativelanguage.googleapis.com/v1beta/openai/',
 };
 
 function openaiAdapter(client: OpenAI, model: string): GenerateExampleFn {
@@ -29,7 +30,9 @@ function anthropicAdapter(client: Anthropic, model: string): GenerateExampleFn {
       model,
       max_tokens: 300,
       system: EXAMPLE_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: `Word: ${word}\nDefinition: ${definition}` }],
+      messages: [
+        { role: 'user', content: `Word: ${word}\nDefinition: ${definition}` },
+      ],
     });
     const block = response.content[0];
     return block?.type === 'text' ? block.text.trim() : '';
@@ -49,7 +52,10 @@ export function createAdapter(
   const baseURL = OPENAI_COMPATIBLE_BASE_URLS[provider];
   const defaultHeaders =
     provider === LlmProvider.OPENROUTER
-      ? { 'HTTP-Referer': appUrl ?? 'http://localhost:3000', 'X-Title': 'Lexis Automator' }
+      ? {
+          'HTTP-Referer': appUrl ?? 'http://localhost:3000',
+          'X-Title': 'Lexis Automator',
+        }
       : undefined;
 
   return openaiAdapter(new OpenAI({ apiKey, baseURL, defaultHeaders }), model);

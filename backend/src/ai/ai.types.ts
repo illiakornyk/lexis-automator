@@ -12,4 +12,7 @@ export const DEFAULT_MODELS: Record<LlmProvider, string> = {
   [LlmProvider.ANTHROPIC]: 'claude-haiku-4-5-20251001',
 };
 
-export type GenerateExampleFn = (word: string, definition: string) => Promise<string>;
+export type GenerateExampleFn = (
+  word: string,
+  definition: string,
+) => Promise<string>;

@@ -1,5 +1,11 @@
 import { Controller, Get, Param, HttpStatus, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { DictionaryService } from './dictionary.service';
 import { DictionaryEntry } from './classes/dictionary-entry.class';
 import { SupabaseAuthGuard } from '@/guards/supabase-auth.guard';
@@ -13,7 +19,11 @@ export class DictionaryController {
 
   @Get(':word')
   @ApiOperation({ summary: 'Get word definition' })
-  @ApiParam({ name: 'word', description: 'The word to look up', example: 'hello' })
+  @ApiParam({
+    name: 'word',
+    description: 'The word to look up',
+    example: 'hello',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Word definition retrieved successfully.',

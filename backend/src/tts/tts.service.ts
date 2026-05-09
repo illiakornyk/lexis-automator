@@ -1,5 +1,9 @@
 import { spawn } from 'child_process';
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { TextToSpeechClient } from '@google-cloud/text-to-speech';
 import { Accent, Gender } from './dto/generate-tts.dto';
 import { resolveVoice } from './tts.types';
@@ -7,10 +11,14 @@ import { resolveVoice } from './tts.types';
 function convertWavToWebm(wavBuffer: Buffer, logger: Logger): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const ffmpeg = spawn('ffmpeg', [
-      '-i', 'pipe:0',
-      '-f', 'webm',
-      '-c:a', 'libopus',
-      '-b:a', '32k',
+      '-i',
+      'pipe:0',
+      '-f',
+      'webm',
+      '-c:a',
+      'libopus',
+      '-b:a',
+      '32k',
       'pipe:1',
     ]);
 
@@ -28,7 +36,9 @@ function convertWavToWebm(wavBuffer: Buffer, logger: Logger): Promise<Buffer> {
       resolve(Buffer.concat(chunks));
     });
 
-    ffmpeg.stdin.on('error', (err) => logger.error(`ffmpeg stdin error: ${err.message}`));
+    ffmpeg.stdin.on('error', (err) =>
+      logger.error(`ffmpeg stdin error: ${err.message}`),
+    );
     ffmpeg.stdin.write(wavBuffer);
     ffmpeg.stdin.end();
   });
@@ -64,10 +74,15 @@ export class TtsService {
       });
 
       if (!response.audioContent) {
-        throw new InternalServerErrorException('Google TTS returned empty audio payload');
+        throw new InternalServerErrorException(
+          'Google TTS returned empty audio payload',
+        );
       }
 
-      const webmBuffer = await convertWavToWebm(Buffer.from(response.audioContent), this.logger);
+      const webmBuffer = await convertWavToWebm(
+        Buffer.from(response.audioContent),
+        this.logger,
+      );
       return webmBuffer.toString('base64');
     } catch (error) {
       this.logger.error('Google Cloud TTS generation failed', error);

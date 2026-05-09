@@ -24,7 +24,11 @@ export class CreateExportJobsDto {
   @IsEnum(Accent)
   accent: Accent;
 
-  @ApiProperty({ enum: Gender, example: Gender.FEMALE, description: 'TTS voice gender' })
+  @ApiProperty({
+    enum: Gender,
+    example: Gender.FEMALE,
+    description: 'TTS voice gender',
+  })
   @IsEnum(Gender)
   gender: Gender;
 }

@@ -41,9 +41,17 @@ export class ImagesController {
   @Get('search')
   @ApiOperation({ summary: 'Search images on Pixabay' })
   @ApiQuery({ name: 'q', description: 'Search query', example: 'cat' })
-  @ApiQuery({ name: 'page', description: 'Page number', required: false, example: 1 })
+  @ApiQuery({
+    name: 'page',
+    description: 'Page number',
+    required: false,
+    example: 1,
+  })
   @ApiResponse({ status: HttpStatus.OK, description: 'Image search results.' })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Query is required.' })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Query is required.',
+  })
   search(
     @Query('q') q: string,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
@@ -55,8 +63,14 @@ export class ImagesController {
   @Post('save-from-url')
   @ApiOperation({ summary: 'Download and store an image from a URL' })
   @ApiBody({ type: SaveImageDto })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'Image saved successfully.' })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Failed to download image.' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Image saved successfully.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Failed to download image.',
+  })
   saveFromUrl(@Body() dto: SaveImageDto, @Req() req: AuthenticatedRequest) {
     return this.imagesService
       .saveFromUrl(dto.cardId, req.user.sub, dto.url)
@@ -68,8 +82,14 @@ export class ImagesController {
   @ApiOperation({ summary: 'Upload an image file for a card' })
   @ApiConsumes('multipart/form-data')
   @ApiParam({ name: 'cardId', description: 'The card to attach the image to' })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'Image uploaded successfully.' })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'No file uploaded.' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Image uploaded successfully.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'No file uploaded.',
+  })
   async upload(
     @Param('cardId') cardId: string,
     @UploadedFile() file: Express.Multer.File,
@@ -87,19 +107,34 @@ export class ImagesController {
 
   @Delete(':cardId')
   @ApiOperation({ summary: 'Remove the image attached to a card' })
-  @ApiParam({ name: 'cardId', description: 'The card whose image should be removed' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Image removed successfully.' })
+  @ApiParam({
+    name: 'cardId',
+    description: 'The card whose image should be removed',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Image removed successfully.',
+  })
   remove(@Param('cardId') cardId: string) {
     return this.imagesService.removeImage(cardId).then(() => ({ ok: true }));
   }
 
   @Get('signed-url')
   @ApiOperation({ summary: 'Generate a signed URL for a stored image' })
-  @ApiQuery({ name: 'path', description: 'Storage path of the image', example: 'user-id/card-id.jpg' })
+  @ApiQuery({
+    name: 'path',
+    description: 'Storage path of the image',
+    example: 'user-id/card-id.jpg',
+  })
   @ApiResponse({ status: HttpStatus.OK, description: 'Signed URL generated.' })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'path is required.' })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'path is required.',
+  })
   signedUrl(@Query('path') storagePath: string) {
     if (!storagePath) throw new BadRequestException('path is required');
-    return this.imagesService.createSignedUrl(storagePath).then((url) => ({ url }));
+    return this.imagesService
+      .createSignedUrl(storagePath)
+      .then((url) => ({ url }));
   }
 }

@@ -16,7 +16,10 @@ const LANGUAGE_CODE: Record<Accent, string> = {
   [Accent.GB]: 'en-GB',
 };
 
-export function resolveVoice(accent: Accent, gender: Gender): { name: string; languageCode: string } {
+export function resolveVoice(
+  accent: Accent,
+  gender: Gender,
+): { name: string; languageCode: string } {
   return {
     name: VOICE_MAP[accent][gender],
     languageCode: LANGUAGE_CODE[accent],

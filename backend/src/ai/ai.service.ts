@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { HttpException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { LlmProvider, DEFAULT_MODELS, GenerateExampleFn } from './ai.types';
@@ -12,7 +16,8 @@ export class AiService {
   constructor(configService: ConfigService) {
     const provider = configService.getOrThrow<LlmProvider>('LLM_PROVIDER');
     const apiKey = configService.getOrThrow<string>('LLM_API_KEY');
-    const model = configService.get<string>('LLM_MODEL') ?? DEFAULT_MODELS[provider];
+    const model =
+      configService.get<string>('LLM_MODEL') ?? DEFAULT_MODELS[provider];
     const appUrl = configService.get<string>('APP_URL');
     this.adapter = createAdapter(provider, apiKey, model, appUrl);
   }
@@ -25,7 +30,11 @@ export class AiService {
   ): Promise<string> {
     const resolvedProvider = provider ?? LlmProvider.OPENAI;
     const adapter = apiKey
-      ? createAdapter(resolvedProvider, apiKey, DEFAULT_MODELS[resolvedProvider])
+      ? createAdapter(
+          resolvedProvider,
+          apiKey,
+          DEFAULT_MODELS[resolvedProvider],
+        )
       : this.adapter;
 
     try {

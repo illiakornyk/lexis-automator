@@ -13,7 +13,9 @@ export class DictionaryService {
   ) {}
 
   async getDefinition(word: string): Promise<DictionaryResponse> {
-    const baseUrl = this.configService.getOrThrow<string>('FREE_DICTIONARY_API_URL');
+    const baseUrl = this.configService.getOrThrow<string>(
+      'FREE_DICTIONARY_API_URL',
+    );
     const url = `${baseUrl}${encodeURIComponent(word)}`;
 
     try {
@@ -23,9 +25,15 @@ export class DictionaryService {
       return response.data;
     } catch (error: unknown) {
       if (isAxiosError(error) && error.response?.status === 404) {
-        throw new HttpException(`Word "${word}" not found`, HttpStatus.NOT_FOUND);
+        throw new HttpException(
+          `Word "${word}" not found`,
+          HttpStatus.NOT_FOUND,
+        );
       }
-      throw new HttpException('Error fetching word definition', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error fetching word definition',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }
