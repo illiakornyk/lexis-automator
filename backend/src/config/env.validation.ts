@@ -29,9 +29,6 @@ class EnvironmentVariables {
   @IsString()
   SUPABASE_SERVICE_ROLE_KEY: string;
 
-  @IsString()
-  SUPABASE_JWT_SECRET: string;
-
   // Redis
   @IsString()
   REDIS_URL: string;

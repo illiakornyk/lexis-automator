@@ -47,23 +47,22 @@ export class ExportJobsService {
 
     const deckMap = new Map((decks ?? []).map((d) => [d.id, d.name]));
 
-    const rows = dto.deckIds
-      .map((deckId) => {
-        const deckName = deckMap.get(deckId);
-        if (!deckName) return null;
-        return {
-          user_id: userId,
-          deck_id: deckId,
-          deck_name: deckName,
-          status: 'pending',
-          template_ids: dto.templateIds,
-          accent: dto.accent,
-          gender: dto.gender,
-        };
-      })
-      .filter((r): r is NonNullable<typeof r> => r !== null);
+    const invalidIds = dto.deckIds.filter((id) => !deckMap.has(id));
+    if (invalidIds.length > 0) {
+      throw new BadRequestException(
+        `Deck IDs not found or not owned by user: ${invalidIds.join(', ')}`,
+      );
+    }
 
-    if (rows.length === 0) return [];
+    const rows = dto.deckIds.map((deckId) => ({
+      user_id: userId,
+      deck_id: deckId,
+      deck_name: deckMap.get(deckId)!,
+      status: 'pending',
+      template_ids: dto.templateIds,
+      accent: dto.accent,
+      gender: dto.gender,
+    }));
 
     const { data: created, error } = await this.supabase
       .from('export_jobs')
