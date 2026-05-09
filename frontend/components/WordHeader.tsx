@@ -3,7 +3,7 @@
 import React from "react";
 import { Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Phonetic } from "@/lib/types";
+import type { Phonetic } from "@/lib/types/dictionary";
 
 interface WordHeaderProps {
   word: string;

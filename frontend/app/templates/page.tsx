@@ -18,7 +18,8 @@ import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { Save, Plus, Trash2, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 
-import { useTemplates, CustomTemplate, FieldType } from "@/hooks/useTemplates";
+import { useTemplates } from "@/hooks/useTemplates";
+import type { CustomTemplate, FieldType } from "@/lib/types/template";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";

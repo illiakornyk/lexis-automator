@@ -3,14 +3,7 @@
 import { useAuth } from '@/components/AuthProvider';
 import { createClient } from '@/lib/supabase';
 import { toast } from 'sonner';
-
-export interface CardToSave {
-  word: string;
-  partOfSpeech: string;
-  phonetic: string;
-  definition: string;
-  example: string;
-}
+import type { CardToSave } from '@/lib/types/card';
 
 export function useSaveToDecks() {
   const { user } = useAuth();

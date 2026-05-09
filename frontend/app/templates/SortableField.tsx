@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, X } from "lucide-react";
-import { FieldType } from "@/hooks/useTemplates";
+import type { FieldType } from "@/lib/types/template";
 
 interface SortableFieldProps {
   id: string;

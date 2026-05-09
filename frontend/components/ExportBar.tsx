@@ -4,64 +4,42 @@ import { Download, Loader2, Sparkles, BookmarkPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CustomTemplate } from "@/hooks/useTemplates";
 import { DeckCombobox } from "@/components/DeckCombobox";
-import { Deck } from "@/lib/types/deck";
+import { useLexisAutomatorContext } from "@/contexts/LexisAutomatorContext";
 
-interface ExportBarProps {
-  selectedCount: number;
-  missingExamplesCount: number;
-  accent: string;
-  gender: string;
-  onAccentChange: (value: string) => void;
-  onGenderChange: (value: string) => void;
-  templates: CustomTemplate[];
-  isLoaded: boolean;
-  selectedTemplateIds: string[];
-  onTemplateToggle: (id: string) => void;
-  isExporting: boolean;
-  isGeneratingAll: boolean;
-  onDownload: () => void;
-  onGenerateAllMissing: () => void;
-  decks: Deck[];
-  decksLoading: boolean;
-  selectedDeckId: string | null;
-  onSelectDeck: (id: string) => void;
-  onCreateDeck: (name: string) => Promise<void>;
-  isSaving: boolean;
-  onSaveToDeck: () => void;
-}
+export function ExportBar() {
+  const {
+    selectedDefs,
+    missingExamplesCount,
+    accent,
+    setAccent,
+    gender,
+    setGender,
+    templates,
+    isLoaded,
+    selectedTemplateIds,
+    toggleTemplateId,
+    isExporting,
+    isGeneratingAll,
+    handleDownload,
+    handleGenerateAllMissing,
+    decks,
+    decksLoading,
+    selectedDeckId,
+    setSelectedDeckId,
+    isSaving,
+    createDeck,
+    handleSaveToDeck,
+  } = useLexisAutomatorContext();
 
-export function ExportBar({
-  selectedCount,
-  missingExamplesCount,
-  accent,
-  gender,
-  onAccentChange,
-  onGenderChange,
-  templates,
-  isLoaded,
-  selectedTemplateIds,
-  onTemplateToggle,
-  isExporting,
-  isGeneratingAll,
-  onDownload,
-  onGenerateAllMissing,
-  decks,
-  decksLoading,
-  selectedDeckId,
-  onSelectDeck,
-  onCreateDeck,
-  isSaving,
-  onSaveToDeck,
-}: ExportBarProps) {
+  const selectedCount = selectedDefs.length;
+
   if (selectedCount === 0) return null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-[0_-4px_24px_-8px_rgba(0,0,0,0.12)]">
       <div className="max-w-4xl mx-auto px-6 py-4">
 
-        {/* Status row */}
         <div className="flex items-center gap-2 mb-4">
           <span className="bg-indigo-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
             {selectedCount}
@@ -71,7 +49,6 @@ export function ExportBar({
           </span>
         </div>
 
-        {/* Two-zone row */}
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 sm:divide-x sm:divide-slate-200">
 
           {/* Zone 1 — Save to Deck */}
@@ -83,12 +60,12 @@ export function ExportBar({
               <DeckCombobox
                 decks={decks}
                 selectedDeckId={selectedDeckId}
-                onSelectDeck={onSelectDeck}
-                onCreateDeck={onCreateDeck}
+                onSelectDeck={setSelectedDeckId}
+                onCreateDeck={async (name) => { await createDeck(name); }}
                 isLoading={decksLoading}
               />
               <Button
-                onClick={onSaveToDeck}
+                onClick={handleSaveToDeck}
                 disabled={isSaving || !selectedDeckId}
                 size="sm"
                 variant="outline"
@@ -110,14 +87,13 @@ export function ExportBar({
             </p>
 
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-              {/* Templates */}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                 {isLoaded ? (
                   templates.map((t) => (
                     <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-600">
                       <Checkbox
                         checked={selectedTemplateIds.includes(t.id)}
-                        onCheckedChange={() => onTemplateToggle(t.id)}
+                        onCheckedChange={() => toggleTemplateId(t.id)}
                       />
                       {t.name}
                     </label>
@@ -127,9 +103,8 @@ export function ExportBar({
                 )}
               </div>
 
-              {/* TTS */}
               <div className="flex items-center gap-1.5">
-                <Select value={accent} onValueChange={onAccentChange}>
+                <Select value={accent} onValueChange={setAccent}>
                   <SelectTrigger className="w-[100px] h-8 text-sm">
                     <SelectValue />
                   </SelectTrigger>
@@ -138,7 +113,7 @@ export function ExportBar({
                     <SelectItem value="GB">British</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={gender} onValueChange={onGenderChange}>
+                <Select value={gender} onValueChange={setGender}>
                   <SelectTrigger className="w-[90px] h-8 text-sm">
                     <SelectValue />
                   </SelectTrigger>
@@ -150,11 +125,10 @@ export function ExportBar({
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex flex-wrap items-center gap-2">
               {missingExamplesCount > 0 && (
                 <Button
-                  onClick={onGenerateAllMissing}
+                  onClick={handleGenerateAllMissing}
                   disabled={isGeneratingAll || isExporting}
                   variant="outline"
                   size="sm"
@@ -168,7 +142,7 @@ export function ExportBar({
                 </Button>
               )}
               <Button
-                onClick={onDownload}
+                onClick={handleDownload}
                 disabled={isExporting || isGeneratingAll}
                 size="sm"
                 className="bg-indigo-600 hover:bg-indigo-700 ml-auto"

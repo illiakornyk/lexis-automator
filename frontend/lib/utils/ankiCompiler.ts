@@ -1,4 +1,4 @@
-import { CustomTemplate, FieldType } from '@/hooks/useTemplates';
+import type { CustomTemplate, FieldType } from '@/lib/types/template';
 
 const FIELD_SNIPPETS: Record<FieldType, string> = {
   Word: '<div style="text-align:center; font-size: 24px; font-weight: bold;">{{Word}}</div>',

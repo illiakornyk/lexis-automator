@@ -1,6 +1,6 @@
 import { useDraggable } from "@dnd-kit/core";
 import { GripVertical } from "lucide-react";
-import { FieldType } from "@/hooks/useTemplates";
+import type { FieldType } from "@/lib/types/template";
 
 interface DraggablePaletteItemProps {
   type: FieldType;

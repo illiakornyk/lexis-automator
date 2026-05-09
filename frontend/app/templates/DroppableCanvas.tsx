@@ -1,7 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { SortableField } from "./SortableField";
-import { FieldType } from "@/hooks/useTemplates";
+import type { FieldType } from "@/lib/types/template";
 
 interface DroppableCanvasProps {
   id: string;

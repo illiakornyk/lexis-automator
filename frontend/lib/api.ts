@@ -1,4 +1,4 @@
-import { DictionaryEntry } from './types';
+import type { DictionaryEntry } from '@/lib/types/dictionary';
 import { createClient } from './supabase';
 
 // In Next.js, env variables prefixed with NEXT_PUBLIC_ are available in the browser.
