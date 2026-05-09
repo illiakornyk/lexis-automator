@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Loader2, Sparkles, BookmarkPlus } from "lucide-react";
+import { Download, Globe, Loader2, Sparkles, BookmarkPlus, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -53,9 +53,7 @@ export function ExportBar() {
 
           {/* Zone 1 — Save to Deck */}
           <div className="flex flex-col gap-2 sm:pr-6 sm:w-64 shrink-0">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-              Save to deck
-            </p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Save to deck</p>
             <div className="flex items-center gap-2">
               <DeckCombobox
                 decks={decks}
@@ -71,24 +69,17 @@ export function ExportBar() {
                 variant="outline"
                 className="shrink-0 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
               >
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <BookmarkPlus className="h-4 w-4" />
-                )}
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookmarkPlus className="h-4 w-4" />}
               </Button>
             </div>
           </div>
 
-          {/* Zone 2 — Export .apkg */}
-          <div className="flex flex-col gap-3 sm:pl-6 flex-1">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-              Export as Anki deck
-            </p>
-
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                {isLoaded ? (
+          {/* Zone 2 — Card Templates */}
+          <div className="flex flex-col gap-2 sm:px-6 flex-1 min-w-0">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Card templates</p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              {isLoaded ? (
+                templates.length > 0 ? (
                   templates.map((t) => (
                     <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-600">
                       <Checkbox
@@ -99,13 +90,22 @@ export function ExportBar() {
                     </label>
                   ))
                 ) : (
-                  <span className="text-slate-400 text-sm">Loading…</span>
-                )}
-              </div>
+                  <span className="text-slate-400 text-sm">No templates</span>
+                )
+              ) : (
+                <span className="text-slate-400 text-sm">Loading…</span>
+              )}
+            </div>
+          </div>
 
-              <div className="flex items-center gap-1.5">
+          {/* Zone 3 — Voice */}
+          <div className="flex flex-col gap-2 sm:px-6 shrink-0">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Voice</p>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <Globe className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                 <Select value={accent} onValueChange={setAccent}>
-                  <SelectTrigger className="w-[100px] h-8 text-sm">
+                  <SelectTrigger className="w-[110px] h-8 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -113,8 +113,11 @@ export function ExportBar() {
                     <SelectItem value="GB">British</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <User className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                 <Select value={gender} onValueChange={setGender}>
-                  <SelectTrigger className="w-[90px] h-8 text-sm">
+                  <SelectTrigger className="w-[110px] h-8 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -124,8 +127,12 @@ export function ExportBar() {
                 </Select>
               </div>
             </div>
+          </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+          {/* Zone 4 — Export Actions */}
+          <div className="flex flex-col gap-2 sm:pl-6 shrink-0">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Export</p>
+            <div className="flex flex-col gap-2">
               {missingExamplesCount > 0 && (
                 <Button
                   onClick={handleGenerateAllMissing}
@@ -145,12 +152,12 @@ export function ExportBar() {
                 onClick={handleDownload}
                 disabled={isExporting || isGeneratingAll}
                 size="sm"
-                className="bg-indigo-600 hover:bg-indigo-700 ml-auto"
+                className="bg-indigo-600 hover:bg-indigo-700"
               >
                 {isExporting ? (
-                  <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Generating…</>
+                  <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Queuing…</>
                 ) : (
-                  <><Download className="mr-1.5 h-3.5 w-3.5" />Download .apkg</>
+                  <><Download className="mr-1.5 h-3.5 w-3.5" />Export to Anki</>
                 )}
               </Button>
             </div>
