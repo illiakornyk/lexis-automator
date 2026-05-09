@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import List, Optional
 from pydantic import BaseModel
 
 
@@ -10,8 +9,8 @@ class CardData(BaseModel):
     phonetic: str
     definition: str
     example: str
-    audio_path: Optional[str] = None
-    image_path: Optional[str] = None
+    audio_path: str | None = None
+    image_path: str | None = None
 
 
 class CustomTemplateSchema(BaseModel):
@@ -25,8 +24,8 @@ class DeckRequest(BaseModel):
     deck_name: str
     deck_uuid: str
     output_dir: str
-    cards: List[CardData]
-    templates: List[CustomTemplateSchema]
+    cards: list[CardData]
+    templates: list[CustomTemplateSchema]
 
 
 class GenerateResponse(BaseModel):

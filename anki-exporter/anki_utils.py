@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import os
 import re
 import secrets
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Optional
+from pathlib import Path
 
 import genanki
 
@@ -23,12 +23,14 @@ FIELD_VALUE_MAP: dict[str, FieldExtractor] = {
     'Image':        lambda card, extra: extra.get('image', ''),
 }
 
+CLOZE_FIELDS: list[str] = ['Text', 'Extra', 'Audio', 'Image']
+
 
 @dataclass
 class ModelEntry:
     template: CustomTemplateSchema
     model: genanki.Model
-    field_names: Optional[list[str]]
+    field_names: list[str] | None
 
 
 def _generate_model_id() -> int:
@@ -71,7 +73,7 @@ def _build_cloze_model(template: CustomTemplateSchema, model_id: int) -> genanki
         model_id,
         template.name,
         model_type=genanki.Model.CLOZE,
-        fields=[{'name': 'Text'}, {'name': 'Extra'}, {'name': 'Audio'}],
+        fields=[{'name': f} for f in CLOZE_FIELDS],
         templates=[{'name': template.name, 'qfmt': template.qfmt, 'afmt': template.afmt}],
         css=CLOZE_CSS,
     )
@@ -93,20 +95,19 @@ def _prepare_media(card: CardData) -> tuple[dict[str, str], list[str]]:
     collected: list[str] = []
 
     audio_field = ""
-    if card.audio_path and os.path.exists(card.audio_path):
+    if card.audio_path and Path(card.audio_path).exists():
         collected.append(card.audio_path)
-        audio_field = f"[sound:{os.path.basename(card.audio_path)}]"
+        audio_field = f"[sound:{Path(card.audio_path).name}]"
 
     image_field = ""
-    if card.image_path and os.path.exists(card.image_path):
+    if card.image_path and Path(card.image_path).exists():
         collected.append(card.image_path)
-        img_filename = os.path.basename(card.image_path)
-        image_field = f'<img src="{img_filename}" class="card-image">'
+        image_field = f'<img src="{Path(card.image_path).name}" class="card-image">'
 
     return {'audio': audio_field, 'image': image_field}, collected
 
 
-def _add_cloze_note(deck: genanki.Deck, card: CardData, model: genanki.Model, audio_field: str) -> None:
+def _add_cloze_note(deck: genanki.Deck, card: CardData, model: genanki.Model, extra: dict[str, str]) -> None:
     pattern = re.compile(rf'\b{re.escape(card.word)}\b', re.IGNORECASE)
     if not pattern.search(card.example):
         return
@@ -118,11 +119,13 @@ def _add_cloze_note(deck: genanki.Deck, card: CardData, model: genanki.Model, au
         f"<span class='phonetic'>{card.phonetic}</span>"
         f"<br><br>{card.definition}</div>"
     )
-    deck.add_note(genanki.Note(model=model, fields=[cloze_text, extra_info, audio_field]))
+    fields = [cloze_text, extra_info, extra.get('audio', ''), extra.get('image', '')]
+    deck.add_note(genanki.Note(model=model, fields=fields))
 
 
 def create_anki_package(req: DeckRequest) -> str:
-    os.makedirs(req.output_dir, exist_ok=True)
+    output_dir = Path(req.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
     deck = genanki.Deck(_generate_model_id(), req.deck_name)
     entries = _build_model_entries(req.templates)
     media_files: list[str] = []
@@ -132,7 +135,7 @@ def create_anki_package(req: DeckRequest) -> str:
         media_files.extend(card_media)
         for entry in entries:
             if entry.template.is_cloze:
-                _add_cloze_note(deck, card, entry.model, extra['audio'])
+                _add_cloze_note(deck, card, entry.model, extra)
             else:
                 field_values = [FIELD_VALUE_MAP[f](card, extra) for f in entry.field_names]
                 deck.add_note(genanki.Note(model=entry.model, fields=field_values))
@@ -140,6 +143,6 @@ def create_anki_package(req: DeckRequest) -> str:
     package = genanki.Package(deck)
     package.media_files = media_files
 
-    out_file = os.path.join(req.output_dir, f"{req.deck_uuid}.apkg")
-    package.write_to_file(out_file)
-    return out_file
+    out_file = output_dir / f"{req.deck_uuid}.apkg"
+    package.write_to_file(str(out_file))
+    return str(out_file)
