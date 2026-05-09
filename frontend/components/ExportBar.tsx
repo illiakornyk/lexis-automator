@@ -77,7 +77,7 @@ export function ExportBar() {
           {/* Zone 2 — Card Templates */}
           <div className="flex flex-col gap-2 sm:px-6 flex-1 min-w-0">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Card templates</p>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 items-start">
               {isLoaded ? (
                 templates.length > 0 ? (
                   templates.map((t) => (
@@ -90,10 +90,10 @@ export function ExportBar() {
                     </label>
                   ))
                 ) : (
-                  <span className="text-slate-400 text-sm">No templates</span>
+                  <span className="text-slate-400 text-sm col-span-2">No templates</span>
                 )
               ) : (
-                <span className="text-slate-400 text-sm">Loading…</span>
+                <span className="text-slate-400 text-sm col-span-2">Loading…</span>
               )}
             </div>
           </div>
@@ -138,26 +138,24 @@ export function ExportBar() {
                   onClick={handleGenerateAllMissing}
                   disabled={isGeneratingAll || isExporting}
                   variant="outline"
-                  size="sm"
-                  className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                  className="h-10 border-amber-300 text-amber-700 hover:bg-amber-50"
                 >
                   {isGeneratingAll ? (
-                    <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Generating {missingExamplesCount}…</>
+                    <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />Generating {missingExamplesCount}…</>
                   ) : (
-                    <><Sparkles className="mr-1.5 h-3.5 w-3.5" />Generate {missingExamplesCount} missing</>
+                    <><Sparkles className="mr-1.5 h-4 w-4" />Generate {missingExamplesCount} missing</>
                   )}
                 </Button>
               )}
               <Button
                 onClick={handleDownload}
                 disabled={isExporting || isGeneratingAll}
-                size="sm"
-                className="bg-indigo-600 hover:bg-indigo-700"
+                className="h-10 bg-indigo-600 hover:bg-indigo-700"
               >
                 {isExporting ? (
-                  <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Queuing…</>
+                  <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />Queuing…</>
                 ) : (
-                  <><Download className="mr-1.5 h-3.5 w-3.5" />Export to Anki</>
+                  <><Download className="mr-1.5 h-4 w-4" />Export to Anki</>
                 )}
               </Button>
             </div>

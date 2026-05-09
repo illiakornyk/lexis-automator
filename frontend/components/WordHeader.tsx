@@ -1,7 +1,6 @@
 "use client";
 
-import React from "react";
-import { Volume2 } from "lucide-react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { Phonetic } from "@/lib/types/dictionary";
 
@@ -10,11 +9,24 @@ interface WordHeaderProps {
   phonetics: Phonetic[];
 }
 
-function playAudio(url: string) {
-  new Audio(url).play();
-}
-
 export function WordHeader({ word, phonetics }: WordHeaderProps) {
+  const [playingUrl, setPlayingUrl] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  function playAudio(url: string) {
+    if (playingUrl === url) return;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.onended = null;
+    }
+    const audio = new Audio(url);
+    audioRef.current = audio;
+    setPlayingUrl(url);
+    audio.onended = () => setPlayingUrl(null);
+    audio.onerror = () => setPlayingUrl(null);
+    void audio.play();
+  }
+
   const validPhonetics = phonetics.filter((p) => p.audio && p.audio.trim() !== "");
   const usPhonetic = validPhonetics.find((p) => p.audio?.match(/-us\.mp3$/));
   const ukPhonetic = validPhonetics.find((p) => p.audio?.match(/-uk\.mp3$/));
@@ -32,8 +44,14 @@ export function WordHeader({ word, phonetics }: WordHeaderProps) {
       return firstAudio ? (
         <div className="flex items-center gap-3 mt-2">
           {fallbackText && <span className="text-slate-500">{fallbackText}</span>}
-          <Button variant="outline" size="sm" className="h-7 text-xs rounded-full px-3" onClick={() => playAudio(firstAudio.audio!)}>
-            Play <Volume2 className="ml-1 h-3 w-3" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs rounded-full px-3"
+            disabled={playingUrl === firstAudio.audio}
+            onClick={() => playAudio(firstAudio.audio!)}
+          >
+            ▶ Play
           </Button>
         </div>
       ) : fallbackText ? (
@@ -48,13 +66,25 @@ export function WordHeader({ word, phonetics }: WordHeaderProps) {
           {usText && <span className="text-slate-500">{usText}</span>}
           <div className="flex gap-2">
             {ukPhonetic && (
-              <Button variant="outline" size="sm" className="h-7 text-xs rounded-full px-3" onClick={() => playAudio(ukPhonetic.audio!)}>
-                UK <Volume2 className="ml-1 h-3 w-3" />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs rounded-full px-3 gap-1"
+                disabled={playingUrl === ukPhonetic.audio}
+                onClick={() => playAudio(ukPhonetic.audio!)}
+              >
+                🇬🇧
               </Button>
             )}
             {usPhonetic && (
-              <Button variant="outline" size="sm" className="h-7 text-xs rounded-full px-3" onClick={() => playAudio(usPhonetic.audio!)}>
-                US <Volume2 className="ml-1 h-3 w-3" />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs rounded-full px-3 gap-1"
+                disabled={playingUrl === usPhonetic.audio}
+                onClick={() => playAudio(usPhonetic.audio!)}
+              >
+                🇺🇸
               </Button>
             )}
           </div>
@@ -68,16 +98,28 @@ export function WordHeader({ word, phonetics }: WordHeaderProps) {
         {ukPhonetic && (
           <div className="flex items-center gap-3">
             {ukText && <span className="text-slate-500">{ukText}</span>}
-            <Button variant="outline" size="sm" className="h-7 text-xs rounded-full px-3" onClick={() => playAudio(ukPhonetic.audio!)}>
-              UK <Volume2 className="ml-1 h-3 w-3" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs rounded-full px-3 gap-1"
+              disabled={playingUrl === ukPhonetic.audio}
+              onClick={() => playAudio(ukPhonetic.audio!)}
+            >
+              🇬🇧
             </Button>
           </div>
         )}
         {usPhonetic && (
           <div className="flex items-center gap-3">
             {usText && <span className="text-slate-500">{usText}</span>}
-            <Button variant="outline" size="sm" className="h-7 text-xs rounded-full px-3" onClick={() => playAudio(usPhonetic.audio!)}>
-              US <Volume2 className="ml-1 h-3 w-3" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs rounded-full px-3 gap-1"
+              disabled={playingUrl === usPhonetic.audio}
+              onClick={() => playAudio(usPhonetic.audio!)}
+            >
+              🇺🇸
             </Button>
           </div>
         )}
@@ -87,7 +129,7 @@ export function WordHeader({ word, phonetics }: WordHeaderProps) {
 
   return (
     <div>
-      <h2 className="text-4xl font-extrabold capitalize text-slate-800 tracking-tight">{word}</h2>
+      <h2 className="font-heading text-4xl font-bold capitalize text-slate-800 tracking-tight">{word}</h2>
       {renderPhonetics()}
     </div>
   );

@@ -36,7 +36,7 @@ export function DefinitionCard({
             id={`check-${defId}`}
             checked={isSelected}
             onCheckedChange={() => onToggleSelection(defId)}
-            className="mt-1"
+            className="mt-1 h-5 w-5 shrink-0"
             onClick={(e) => e.stopPropagation()}
           />
           <div className="grid gap-1.5 flex-1">

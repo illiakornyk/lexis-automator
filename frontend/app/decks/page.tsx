@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Library, PackagePlus, Trash2, Loader2, Plus, Check, X, LayoutTemplate, Volume2 } from "lucide-react";
+import { Library, PackagePlus, Trash2, Loader2, Plus, Check, X, LayoutTemplate, Volume2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -24,12 +24,24 @@ export default function DecksPage() {
   const { enqueue, isLoading: isEnqueuing } = useExportJobsContext();
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "name-asc" | "name-desc">("date-desc");
   const [isCreating, setIsCreating] = useState(false);
   const [newDeckName, setNewDeckName] = useState("");
   const newDeckInputRef = useRef<HTMLInputElement>(null);
   const [bulkTemplateIds, setBulkTemplateIds] = useState<string[]>(["default-recognition"]);
   const [bulkAccent, setBulkAccent] = useState("US");
   const [bulkGender, setBulkGender] = useState("FEMALE");
+
+  const sortedDecks = useMemo(() => {
+    return [...decks].sort((a, b) => {
+      switch (sortBy) {
+        case "name-asc":  return a.name.localeCompare(b.name);
+        case "name-desc": return b.name.localeCompare(a.name);
+        case "date-asc":  return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case "date-desc": return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
+  }, [decks, sortBy]);
 
   if (authLoading) return null;
   if (!user) {
@@ -67,8 +79,14 @@ export default function DecksPage() {
     );
   };
 
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    await Promise.all(ids.map((id) => deleteDeck(id)));
+    setSelectedIds(new Set());
+    toast.success(`${ids.length} deck${ids.length !== 1 ? "s" : ""} deleted.`);
+  };
+
   const handleBulkEnqueue = async () => {
-    if (selectedIds.size < 2) return;
     const created = await enqueue({
       deckIds: Array.from(selectedIds),
       templateIds: bulkTemplateIds,
@@ -79,12 +97,6 @@ export default function DecksPage() {
       setSelectedIds(new Set());
       toast.success(`${created.length} deck${created.length !== 1 ? "s" : ""} added to export queue.`);
     }
-  };
-
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    await deleteDeck(id);
   };
 
   if (isLoading) {
@@ -104,6 +116,30 @@ export default function DecksPage() {
           <Badge variant="outline" className="ml-1">{decks.length}/15</Badge>
 
           <div className="ml-auto flex items-center gap-2">
+            {decks.length > 1 && (
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+                <SelectTrigger className="h-8 w-[140px] text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date-desc">Newest first</SelectItem>
+                  <SelectItem value="date-asc">Oldest first</SelectItem>
+                  <SelectItem value="name-asc">Name A→Z</SelectItem>
+                  <SelectItem value="name-desc">Name Z→A</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            {selectedIds.size > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelectedIds(new Set())}
+                className="gap-1.5 text-slate-500"
+              >
+                <XCircle className="h-4 w-4" />
+                Unselect all
+              </Button>
+            )}
             {isCreating ? (
               <>
                 <Input
@@ -159,46 +195,48 @@ export default function DecksPage() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            {decks.map((deck) => (
-              <Link key={deck.id} href={`/decks/${deck.id}`}>
-                <Card className="hover:border-indigo-300 transition-all cursor-pointer">
-                  <CardHeader className="py-4">
-                    <div className="flex items-start gap-3">
-                      <Checkbox
-                        checked={selectedIds.has(deck.id)}
-                        onCheckedChange={() => toggleSelect(deck.id)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="mt-0.5"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-slate-800 truncate">{deck.name}</p>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className={deck.cardCount >= 50 ? "border-red-200 text-red-600" : ""}
-                      >
-                        {deck.cardCount}/50
-                      </Badge>
+            {sortedDecks.map((deck) => (
+              <Card
+                key={deck.id}
+                className="hover:border-indigo-300 transition-all cursor-pointer"
+                onClick={() => router.push(`/decks/${deck.id}`)}
+              >
+                <CardHeader className="py-4">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      checked={selectedIds.has(deck.id)}
+                      onCheckedChange={() => toggleSelect(deck.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-0.5 h-5 w-5 shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-800 truncate">{deck.name}</p>
                     </div>
-                  </CardHeader>
-                  <CardContent className="py-0 pb-4 flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-slate-400 hover:text-red-500"
-                      onClick={(e) => handleDelete(deck.id, e)}
+                    <Badge
+                      variant="outline"
+                      className={deck.cardCount >= 50 ? "border-red-200 text-red-600" : ""}
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              </Link>
+                      {deck.cardCount}/50
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="py-0 pb-4 flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-slate-400 hover:text-red-500"
+                    onClick={(e) => { e.stopPropagation(); void deleteDeck(deck.id); }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}
       </div>
 
-      {selectedIds.size >= 2 && (
+      {selectedIds.size >= 1 && (
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-[0_-4px_24px_-8px_rgba(0,0,0,0.12)]">
           <div className="max-w-4xl mx-auto px-6 py-4">
 
@@ -266,23 +304,32 @@ export default function DecksPage() {
                 </div>
               </div>
 
-              {/* Zone 3 — Export */}
+              {/* Zone 3 — Actions */}
               <div className="flex flex-col gap-2 sm:pl-6 shrink-0">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
                   <PackagePlus size={12} />
-                  Export
+                  Actions
                 </p>
-                <div className="flex items-center">
+                <div className="flex flex-col gap-2">
                   <Button
                     onClick={handleBulkEnqueue}
                     disabled={isEnqueuing}
-                    className="bg-indigo-600 hover:bg-indigo-700 sm:ml-auto"
+                    className="h-10 bg-indigo-600 hover:bg-indigo-700"
                   >
                     {isEnqueuing ? (
                       <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Queuing…</>
                     ) : (
-                      <><PackagePlus className="mr-2 h-4 w-4" />Queue {selectedIds.size} decks</>
+                      <><PackagePlus className="mr-2 h-4 w-4" />Export to Anki</>
                     )}
+                  </Button>
+                  <Button
+                    onClick={handleBulkDelete}
+                    disabled={isEnqueuing}
+                    variant="outline"
+                    className="h-10 border-red-200 text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete {selectedIds.size} deck{selectedIds.size !== 1 ? "s" : ""}
                   </Button>
                 </div>
               </div>

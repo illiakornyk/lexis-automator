@@ -86,6 +86,17 @@ function LexisAutomatorUI() {
         {!isLoading && wordData && (
           <>
             <WordHeader word={wordData.word} phonetics={wordData.phonetics} />
+            <p className="text-xs text-slate-400 -mt-6">
+              Source:{" "}
+              <a
+                href="https://en.wiktionary.org/wiki/Wiktionary:Main_Page"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2 hover:text-slate-600 transition-colors"
+              >
+                Wiktionary
+              </a>
+            </p>
 
             <div className="space-y-8">
               {Array.from(groupedMeanings.entries()).map(([pos, items]) => {
