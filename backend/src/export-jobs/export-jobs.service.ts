@@ -264,10 +264,19 @@ export class ExportJobsService {
     }
 
     const stuckThreshold = new Date(Date.now() - STUCK_JOB_TIMEOUT_MS).toISOString();
-    await this.supabase
+    const { data: stuck } = await this.supabase
       .from('export_jobs')
-      .update({ status: 'pending', started_at: null })
+      .update({
+        status: 'failed',
+        error_message: 'Job timed out — worker did not finish in the expected time',
+        completed_at: new Date().toISOString(),
+      })
       .eq('status', 'processing')
-      .lt('started_at', stuckThreshold);
+      .lt('started_at', stuckThreshold)
+      .select('id');
+
+    if (stuck && stuck.length > 0) {
+      this.logger.warn(`Marked ${stuck.length} stuck job(s) as failed`);
+    }
   }
 }

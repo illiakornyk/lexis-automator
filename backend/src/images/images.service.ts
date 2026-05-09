@@ -5,6 +5,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 import { SupabaseService } from '@/supabase/supabase.service';
 import { firstValueFrom } from 'rxjs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 import type {
   ImageSearchResult,
@@ -116,7 +117,19 @@ export class ImagesService {
       .eq('id', cardId);
 
     if (updateError) {
-      this.logger.error('Failed to update saved_cards.image_path', updateError);
+      this.logger.error(
+        `Failed to update saved_cards.image_path for card ${cardId}`,
+        updateError,
+      );
+      const { error: removeError } = await this.supabase.storage
+        .from(BUCKET)
+        .remove([storagePath]);
+      if (removeError) {
+        this.logger.error(
+          `Failed to clean up orphaned upload at ${storagePath}: ${removeError.message}`,
+        );
+      }
+      throw new BadRequestException('Failed to attach image to card');
     }
 
     return storagePath;
@@ -163,8 +176,7 @@ export class ImagesService {
     const filename = `image_${path.basename(storagePath, ext)}${ext}`;
     const destPath = path.join(destDir, filename);
 
-    const { writeFile } = await import('fs/promises');
-    await writeFile(destPath, buffer);
+    await fs.writeFile(destPath, buffer);
     return destPath;
   }
 }
