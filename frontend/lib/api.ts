@@ -96,40 +96,6 @@ export const LexisApi = {
     return response.blob();
   },
 
-  async exportDeck(payload: {
-    deckId: string;
-    templateIds: string[];
-    ttsSettings: { accent: string; gender: string };
-  }): Promise<Blob> {
-    const response = await fetch(`${API_BASE_URL}/export/deck`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(response.status, errorData.message || 'Failed to export deck.');
-    }
-    return response.blob();
-  },
-
-  async exportDecksArchive(payload: {
-    deckIds: string[];
-    templateIds: string[];
-    ttsSettings: { accent: string; gender: string };
-  }): Promise<Blob> {
-    const response = await fetch(`${API_BASE_URL}/export/decks/archive`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(response.status, errorData.message || 'Failed to export archive.');
-    }
-    return response.blob();
-  },
-
   async searchImages(q: string, page = 1): Promise<Array<{ id: string; previewUrl: string; webformatUrl: string }>> {
     const params = new URLSearchParams({ q, page: String(page) });
     const response = await fetch(`${API_BASE_URL}/images/search?${params}`, {

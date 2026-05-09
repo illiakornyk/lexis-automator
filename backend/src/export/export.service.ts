@@ -2,26 +2,21 @@ import { ImagesService } from '@/images/images.service';
 import { TtsService } from '@/tts/tts.service';
 import { Database } from '@/types/database.types';
 import { HttpService } from '@nestjs/axios';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseService } from '@/supabase/supabase.service';
-import * as archiver from 'archiver';
 import { createReadStream } from 'fs';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { firstValueFrom } from 'rxjs';
-import { PassThrough } from 'stream';
 import { v4 as uuidv4 } from 'uuid';
 import {
-	ExportAnkiDto,
-	TtsSettingsDto,
+  ExportAnkiDto,
+  TtsSettingsDto,
 } from './dto/export-anki.dto';
-import { ExportDeckDto } from './dto/export-deck.dto';
-import { ExportDecksArchiveDto } from './dto/export-decks-archive.dto';
 import { resolveAndCompileTemplates, type CompiledTemplate } from './utils/anki-compiler';
 import type {
   MappedCard,
-  AnkiCardPayload,
   AnkiPayload,
   DeckExportResult,
 } from './export.types';
@@ -120,19 +115,18 @@ export class ExportService {
     return response.data.file_path;
   }
 
-  /**
-   * Shared core: fetch deck + cards, compile templates, build apkg, return cleanup handle.
-   * Pass userId to enforce ownership (required for background jobs).
-   */
   private async buildDeckExport(
     deckId: string,
+    userId: string,
     templateIds: string[],
     ttsSettings: TtsSettingsDto,
-    userId?: string,
   ): Promise<DeckExportResult> {
-    let deckQuery = this.supabase.from('decks').select('name').eq('id', deckId);
-    if (userId) deckQuery = deckQuery.eq('user_id', userId);
-    const { data: deck, error: deckError } = await deckQuery.single();
+    const { data: deck, error: deckError } = await this.supabase
+      .from('decks')
+      .select('name')
+      .eq('id', deckId)
+      .eq('user_id', userId)
+      .single();
 
     if (deckError || !deck) throw new Error(`Deck ${deckId} not found`);
 
@@ -171,7 +165,7 @@ export class ExportService {
     templateIds: string[],
     ttsSettings: TtsSettingsDto,
   ): Promise<DeckExportResult> {
-    return this.buildDeckExport(deckId, templateIds, ttsSettings, userId);
+    return this.buildDeckExport(deckId, userId, templateIds, ttsSettings);
   }
 
   async generateApkg(exportDto: ExportAnkiDto) {
@@ -193,102 +187,6 @@ export class ExportService {
     } catch (error) {
       await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
       this.logger.error('Failed to generate APKG:', error);
-      throw error;
-    }
-  }
-
-  async exportDeck(dto: ExportDeckDto) {
-    try {
-      const { apkgPath, deckName, cleanup } = await this.buildDeckExport(
-        dto.deckId,
-        dto.templateIds,
-        dto.ttsSettings,
-      );
-      return { fileStream: createReadStream(apkgPath), cleanup, deckName };
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to export deck';
-      throw new BadRequestException(message);
-    }
-  }
-
-  async exportDecksArchive(dto: ExportDecksArchiveDto) {
-    const cleanups: Array<() => Promise<void>> = [];
-    const runAllCleanups = () =>
-      Promise.all(cleanups.map((fn) => fn())).then(() => {});
-
-    try {
-      const templates = await resolveAndCompileTemplates(
-        dto.templateIds,
-        this.supabase,
-      );
-
-      // Batch fetch all decks in one query
-      const { data: decks } = await this.supabase
-        .from('decks')
-        .select('id, name')
-        .in('id', dto.deckIds);
-
-      const deckMap = new Map((decks ?? []).map((d) => [d.id, d.name]));
-
-      const apkgEntries: Array<{ filePath: string; archiveName: string }> = [];
-
-      for (const deckId of dto.deckIds) {
-        const deckName = deckMap.get(deckId);
-        if (!deckName) continue;
-
-        const { data: rawCards } = await this.supabase
-          .from('saved_cards')
-          .select('*')
-          .eq('deck_id', deckId)
-          .order('created_at', { ascending: true });
-
-        if (!rawCards?.length) continue;
-
-        const cards = rawCards.map((c) => this.mapRawCard(c));
-
-        const tempDir = path.join(process.cwd(), 'temp', `export-${uuidv4()}`);
-        await fs.mkdir(tempDir, { recursive: true });
-        cleanups.push(() =>
-          fs.rm(tempDir, { recursive: true, force: true }).catch(() => {}),
-        );
-
-        const apkgPath = await this.buildApkgFile(
-          deckName,
-          cards,
-          dto.ttsSettings,
-          templates,
-          tempDir,
-        );
-        apkgEntries.push({
-          filePath: apkgPath,
-          archiveName: `${deckName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.apkg`,
-        });
-      }
-
-      if (apkgEntries.length === 0)
-        throw new BadRequestException('No valid decks to export');
-
-      const archive = archiver.create('zip', { zlib: { level: 6 } });
-      const passThrough = new PassThrough();
-      archive.pipe(passThrough);
-
-      for (const entry of apkgEntries) {
-        archive.file(entry.filePath, { name: entry.archiveName });
-      }
-
-      archive.on('end', () => {
-        void runAllCleanups();
-      });
-      archive.on('error', (err) => {
-        void runAllCleanups();
-        passThrough.destroy(err);
-      });
-      archive.finalize();
-
-      return { stream: passThrough };
-    } catch (error) {
-      await runAllCleanups();
-      this.logger.error('Failed to generate decks archive:', error);
       throw error;
     }
   }

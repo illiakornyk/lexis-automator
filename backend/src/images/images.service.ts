@@ -6,7 +6,10 @@ import type { Database } from '@/types/database.types';
 import { SupabaseService } from '@/supabase/supabase.service';
 import { firstValueFrom } from 'rxjs';
 import * as path from 'path';
-import type { ImageSearchResult } from './images.types';
+import type {
+  ImageSearchResult,
+  PixabaySearchResponse,
+} from './images.types';
 
 const MAX_IMAGE_BYTES = 1 * 1024 * 1024;
 const BUCKET = 'card-images';
@@ -41,11 +44,13 @@ export class ImagesService {
 
   async searchImages(query: string, page = 1): Promise<ImageSearchResult[]> {
     const url = `https://pixabay.com/api/?key=${this.pixabayKey}&q=${encodeURIComponent(query)}&image_type=photo&safesearch=true&per_page=20&page=${page}`;
-    const resp = await firstValueFrom(this.httpService.get(url));
-    return (resp.data.hits as any[]).map((h) => ({
+    const resp = await firstValueFrom(
+      this.httpService.get<PixabaySearchResponse>(url),
+    );
+    return resp.data.hits.map((h) => ({
       id: String(h.id),
-      previewUrl: h.previewURL as string,
-      webformatUrl: h.webformatURL as string,
+      previewUrl: h.previewURL,
+      webformatUrl: h.webformatURL,
     }));
   }
 
@@ -63,7 +68,9 @@ export class ImagesService {
       );
       buffer = Buffer.from(resp.data);
       contentType = (resp.headers['content-type'] as string) || 'image/jpeg';
-    } catch (e) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'unknown error';
+      this.logger.warn(`Image download failed for ${url}: ${message}`);
       throw new BadRequestException('Failed to download image from URL');
     }
 
