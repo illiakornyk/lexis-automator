@@ -7,3 +7,7 @@ export const JOB_STATUS = {
 } as const;
 
 export type JobStatus = (typeof JOB_STATUS)[keyof typeof JOB_STATUS];
+
+export interface ExportJobPayload {
+  jobId: string;
+}

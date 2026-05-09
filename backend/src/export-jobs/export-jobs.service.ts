@@ -13,7 +13,7 @@ import { SupabaseService } from '@/supabase/supabase.service';
 import { CreateExportJobsDto } from './dto/create-export-jobs.dto';
 
 import { EXPORT_JOBS_QUEUE, MAX_DONE_SLOTS, STUCK_JOB_TIMEOUT_MS } from './export-jobs.constants';
-import { JOB_STATUS } from './export-jobs.types';
+import { JOB_STATUS, type ExportJobPayload } from './export-jobs.types';
 
 @Injectable()
 export class ExportJobsService {
@@ -21,7 +21,7 @@ export class ExportJobsService {
   private readonly supabase: SupabaseClient<Database>;
 
   constructor(
-    @InjectQueue(EXPORT_JOBS_QUEUE) private readonly queue: Queue,
+    @InjectQueue(EXPORT_JOBS_QUEUE) private readonly queue: Queue<ExportJobPayload>,
     supabaseService: SupabaseService,
   ) {
     this.supabase = supabaseService.client;
@@ -85,15 +85,22 @@ export class ExportJobsService {
       ),
     );
 
-    const failedToEnqueue = enqueueResults
-      .map((r, i) => (r.status === 'rejected' ? { job: created[i], reason: r.reason } : null))
-      .filter((x): x is { job: typeof created[number]; reason: unknown } => x !== null);
+    const failedJobs: typeof created = [];
+    enqueueResults.forEach((r, i) => {
+      if (r.status === 'rejected') {
+        const reason =
+          r.reason instanceof Error ? r.reason.message : String(r.reason);
+        this.logger.warn(
+          `Failed to enqueue job ${created[i].id}: ${reason}`,
+        );
+        failedJobs.push(created[i]);
+      }
+    });
 
-    if (failedToEnqueue.length > 0) {
+    if (failedJobs.length > 0) {
       this.logger.error(
-        `Failed to enqueue ${failedToEnqueue.length} of ${created.length} export jobs`,
+        `Failed to enqueue ${failedJobs.length} of ${created.length} export jobs`,
       );
-      const failedIds = failedToEnqueue.map((f) => f.job.id);
       await this.supabase
         .from('export_jobs')
         .update({
@@ -101,10 +108,10 @@ export class ExportJobsService {
           error_message: 'Failed to enqueue job in worker queue',
           completed_at: new Date().toISOString(),
         })
-        .in('id', failedIds);
+        .in('id', failedJobs.map((j) => j.id));
     }
 
-    const failedIdSet = new Set(failedToEnqueue.map((f) => f.job.id));
+    const failedIdSet = new Set(failedJobs.map((j) => j.id));
     return created.filter((job) => !failedIdSet.has(job.id));
   }
 
@@ -117,7 +124,18 @@ export class ExportJobsService {
     return data ?? [];
   }
 
-  async getJob(jobId: string) {
+  async getJobForUser(jobId: string, userId: string) {
+    const { data } = await this.supabase
+      .from('export_jobs')
+      .select('*')
+      .eq('id', jobId)
+      .eq('user_id', userId)
+      .single();
+    return data;
+  }
+
+  // No user_id filter — for processor use only, where user_id is read from the row.
+  async getJobForProcessor(jobId: string) {
     const { data } = await this.supabase
       .from('export_jobs')
       .select('*')
@@ -245,7 +263,7 @@ export class ExportJobsService {
   }
 
   async removeJob(jobId: string, userId: string): Promise<void> {
-    const job = await this.getJob(jobId);
+    const job = await this.getJobForUser(jobId, userId);
     if (!job) return;
 
     if (
@@ -281,10 +299,15 @@ export class ExportJobsService {
 
     const now = new Date().toISOString();
 
-    const { data: expired } = await this.supabase
+    const { data: expired, error: expiredError } = await this.supabase
       .from('export_jobs')
       .select('id, file_path')
       .lt('expires_at', now);
+
+    if (expiredError) {
+      this.logger.error(`Failed to fetch expired jobs: ${expiredError.message}`);
+      return;
+    }
 
     const expiredRows = expired ?? [];
 
@@ -293,19 +316,28 @@ export class ExportJobsService {
       .filter((p): p is string => p !== null);
 
     if (filePaths.length > 0) {
-      await this.supabase.storage.from('exports').remove(filePaths);
+      const { error: storageError } = await this.supabase.storage
+        .from('exports')
+        .remove(filePaths);
+      if (storageError) {
+        this.logger.error(`Failed to remove expired storage files: ${storageError.message}`);
+      }
     }
 
     if (expiredRows.length > 0) {
-      await this.supabase
+      const { error: deleteError } = await this.supabase
         .from('export_jobs')
         .delete()
         .in('id', expiredRows.map((j) => j.id));
-      this.logger.log(`Deleted ${expiredRows.length} expired export jobs`);
+      if (deleteError) {
+        this.logger.error(`Failed to delete expired job rows: ${deleteError.message}`);
+      } else {
+        this.logger.log(`Deleted ${expiredRows.length} expired export jobs`);
+      }
     }
 
     const stuckThreshold = new Date(Date.now() - STUCK_JOB_TIMEOUT_MS).toISOString();
-    const { data: stuck } = await this.supabase
+    const { data: stuck, error: stuckError } = await this.supabase
       .from('export_jobs')
       .update({
         status: JOB_STATUS.FAILED,
@@ -316,7 +348,9 @@ export class ExportJobsService {
       .lt('started_at', stuckThreshold)
       .select('id');
 
-    if (stuck && stuck.length > 0) {
+    if (stuckError) {
+      this.logger.error(`Failed to mark stuck jobs as failed: ${stuckError.message}`);
+    } else if (stuck && stuck.length > 0) {
       this.logger.warn(`Marked ${stuck.length} stuck job(s) as failed`);
     }
   }

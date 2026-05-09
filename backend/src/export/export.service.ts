@@ -3,6 +3,7 @@ import { TtsService } from '@/tts/tts.service';
 import { Database } from '@/types/database.types';
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseService } from '@/supabase/supabase.service';
 import { createReadStream } from 'fs';
@@ -18,6 +19,7 @@ import { resolveAndCompileTemplates, type CompiledTemplate } from './utils/anki-
 import type {
   MappedCard,
   AnkiPayload,
+  AnkiSidecarResponse,
   DeckExportResult,
 } from './export.types';
 
@@ -56,6 +58,7 @@ export class ExportService {
     private readonly httpService: HttpService,
     private readonly ttsService: TtsService,
     private readonly imagesService: ImagesService,
+    private readonly configService: ConfigService,
     supabaseService: SupabaseService,
   ) {
     this.supabase = supabaseService.client;
@@ -120,10 +123,13 @@ export class ExportService {
     }
 
     const pythonServiceUrl =
-      process.env.ANKI_EXPORTER_URL || 'http://127.0.0.1:8000';
+      this.configService.get<string>('ANKI_EXPORTER_URL') ?? 'http://127.0.0.1:8000';
     this.logger.log(`Requesting APKG generation for deck: ${deckName}`);
     const response = await firstValueFrom(
-      this.httpService.post(`${pythonServiceUrl}/generate`, pythonPayload),
+      this.httpService.post<AnkiSidecarResponse>(
+        `${pythonServiceUrl}/generate`,
+        pythonPayload,
+      ),
     );
     return response.data.file_path;
   }

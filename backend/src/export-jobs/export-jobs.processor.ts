@@ -4,6 +4,7 @@ import { Job } from 'bullmq';
 import * as fs from 'fs/promises';
 import { ExportJobsService } from './export-jobs.service';
 import { EXPORT_JOBS_QUEUE } from './export-jobs.constants';
+import type { ExportJobPayload } from './export-jobs.types';
 import { ExportService } from '@/export/export.service';
 import { Accent, Gender } from '@/tts/dto/generate-tts.dto';
 
@@ -18,7 +19,7 @@ export class ExportJobsProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<{ jobId: string }>): Promise<void> {
+  async process(job: Job<ExportJobPayload>): Promise<void> {
     const { jobId } = job.data;
     this.logger.log(
       `Processing export job ${jobId} (attempt ${job.attemptsMade + 1})`,
@@ -56,7 +57,7 @@ export class ExportJobsProcessor extends WorkerHost {
       cleanup = result.cleanup;
 
       // Check cancellation after the long-running build
-      const current = await this.exportJobsService.getJob(jobId);
+      const current = await this.exportJobsService.getJobForProcessor(jobId);
       if (current?.status === 'cancelled') {
         this.logger.log(
           `Job ${jobId} was cancelled after build, discarding output.`,

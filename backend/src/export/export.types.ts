@@ -28,3 +28,8 @@ export interface DeckExportResult {
   deckName: string;
   cleanup: () => Promise<void>;
 }
+
+export interface AnkiSidecarResponse {
+  status: string;
+  file_path: string;
+}
