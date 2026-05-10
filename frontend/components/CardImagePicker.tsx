@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Search, Link, Upload, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   cardId: string;
+  word: string;
   currentImagePath: string | null;
   onImageSaved: (imagePath: string | null) => void;
 }
@@ -33,11 +34,16 @@ export function CardImagePicker({
   open,
   onOpenChange,
   cardId,
+  word,
   currentImagePath,
   onImageSaved,
 }: Props) {
   const [tab, setTab] = useState<Tab>("search");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(word);
+
+  useEffect(() => {
+    if (open) setQuery(word);
+  }, [open, word]);
   const [results, setResults] = useState<PixabayImage[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [urlValue, setUrlValue] = useState("");
@@ -64,8 +70,8 @@ export function CardImagePicker({
       onImageSaved(imagePath);
       onOpenChange(false);
       toast.success("Image saved.");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save image.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to save image.");
     } finally {
       setIsSaving(false);
     }
@@ -84,8 +90,8 @@ export function CardImagePicker({
       onImageSaved(imagePath);
       onOpenChange(false);
       toast.success("Image uploaded.");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to upload image.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload image.");
     } finally {
       setIsSaving(false);
     }
@@ -116,7 +122,7 @@ export function CardImagePicker({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg" aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle>Set card image</DialogTitle>
+          <DialogTitle className="font-sans">Set card image</DialogTitle>
         </DialogHeader>
 
         <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">

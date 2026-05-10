@@ -1,109 +1,19 @@
-import os
-import random
+from __future__ import annotations
+
 import re
+import secrets
+from collections.abc import Callable
+from dataclasses import dataclass
+from pathlib import Path
+
 import genanki
-from schemas import DeckRequest
 
-CARD_CSS = """
-.card {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-  font-size: 17px;
-  color: #1c1917;
-  background-color: #fafaf9;
-  max-width: 560px;
-  margin: 0 auto;
-  padding: 20px 24px;
-  line-height: 1.5;
-}
+from schemas import CardData, CustomTemplateSchema, DeckRequest
+from card_styles import CARD_CSS, CLOZE_CSS
 
-.lx-word {
-  font-size: 32px;
-  font-weight: 700;
-  text-align: center;
-  color: #1c1917;
-  margin-bottom: 8px;
-  letter-spacing: -0.5px;
-}
+FieldExtractor = Callable[[CardData, dict[str, str]], str]
 
-.lx-meta {
-  text-align: center;
-  margin-bottom: 4px;
-}
-
-.lx-pos {
-  display: inline-block;
-  font-size: 12px;
-  font-style: italic;
-  color: #78716c;
-  background: #f5f5f4;
-  border: 1px solid #e7e5e4;
-  padding: 1px 8px;
-  border-radius: 9999px;
-  margin-right: 4px;
-}
-
-.lx-phonetic {
-  font-size: 14px;
-  color: #a8a29e;
-  letter-spacing: 0.5px;
-}
-
-.lx-definition {
-  font-size: 16px;
-  color: #292524;
-  margin: 14px 0;
-  padding: 12px 14px;
-  background: #ffffff;
-  border-left: 3px solid #f59e0b;
-  border-radius: 0 6px 6px 0;
-  line-height: 1.6;
-  text-align: left;
-}
-
-.lx-example {
-  font-size: 15px;
-  font-style: italic;
-  color: #57534e;
-  background: #f5f5f4;
-  border: 1px solid #e7e5e4;
-  padding: 10px 14px;
-  border-radius: 6px;
-  margin: 10px 0;
-  line-height: 1.6;
-  text-align: left;
-}
-
-.lx-audio {
-  text-align: center;
-  margin-top: 16px;
-}
-
-.lx-image {
-  text-align: center;
-  margin-top: 12px;
-}
-
-.lx-typein {
-  text-align: center;
-  margin-top: 14px;
-}
-
-hr#answer {
-  margin: 16px 0;
-  border: none;
-  border-top: 1px solid #e7e5e4;
-}
-"""
-
-CLOZE_CSS = CARD_CSS + """
-.cloze {
-  font-weight: bold;
-  color: #f59e0b;
-}
-"""
-
-# Maps Anki field names to how to extract their value from a CardData + extra dict
-FIELD_VALUE_MAP = {
+FIELD_VALUE_MAP: dict[str, FieldExtractor] = {
     'Word':         lambda card, extra: card.word,
     'PartOfSpeech': lambda card, extra: card.partOfSpeech,
     'Phonetic':     lambda card, extra: card.phonetic,
@@ -113,127 +23,141 @@ FIELD_VALUE_MAP = {
     'Image':        lambda card, extra: extra.get('image', ''),
 }
 
-def generate_model_id():
-    return random.randrange(1 << 30, 1 << 31)
+CLOZE_FIELDS: list[str] = ['Text', 'Extra', 'Audio', 'Image']
 
-def extract_fields_from_template(qfmt: str, afmt: str) -> list[str]:
-    """Return unique field names referenced in qfmt/afmt, in order of first appearance."""
+
+@dataclass
+class ModelEntry:
+    template: CustomTemplateSchema
+    model: genanki.Model
+    field_names: list[str] | None
+
+
+def _generate_model_id() -> int:
+    return secrets.randbelow((1 << 31) - (1 << 30)) + (1 << 30)
+
+
+# Matches {{Field}}, {{#Field}}, {{^Field}}, and any number of `filter:` modifiers
+# (e.g. {{type:Field}}, {{cloze:Field}}, {{tts en_US:Field}}).
+TEMPLATE_FIELD_RE = re.compile(r'\{\{[#/^]?(?:[^{}:]+:)*(\w+)\}\}')
+
+
+def _extract_fields_from_template(qfmt: str, afmt: str) -> list[str]:
     combined = qfmt + ' ' + afmt
     seen: set[str] = set()
     fields: list[str] = []
 
-    # {{FieldName}}, {{#FieldName}}, {{/FieldName}}, {{^FieldName}}
-    for m in re.finditer(r'\{\{[#/^]?(\w+)\}\}', combined):
+    for m in TEMPLATE_FIELD_RE.finditer(combined):
         name = m.group(1)
         if name != 'FrontSide' and name in FIELD_VALUE_MAP and name not in seen:
             seen.add(name)
             fields.append(name)
 
-    # {{type:FieldName}} — type-in cards reuse an existing field
-    for m in re.finditer(r'\{\{type:(\w+)\}\}', combined):
-        name = m.group(1)
-        if name in FIELD_VALUE_MAP and name not in seen:
-            seen.add(name)
-            fields.append(name)
+    fields = fields or list(FIELD_VALUE_MAP.keys())
 
-    return fields or list(FIELD_VALUE_MAP.keys())
+    # Anki uses the first field for duplicate detection. Putting Definition
+    # first means cards for the same word with different definitions are never
+    # flagged as duplicates, since each definition is unique.
+    if 'Definition' in fields:
+        fields = ['Definition'] + [f for f in fields if f != 'Definition']
 
-def get_base_model(template, model_id):
-    field_names = extract_fields_from_template(template.qfmt, template.afmt)
+    return fields
+
+
+def _build_base_model(template: CustomTemplateSchema, model_id: int) -> tuple[genanki.Model, list[str]]:
+    field_names = _extract_fields_from_template(template.qfmt, template.afmt)
     model = genanki.Model(
         model_id,
         template.name,
         fields=[{'name': f} for f in field_names],
-        templates=[{
-            'name': template.name,
-            'qfmt': template.qfmt,
-            'afmt': template.afmt,
-        }],
+        templates=[{'name': template.name, 'qfmt': template.qfmt, 'afmt': template.afmt}],
         css=CARD_CSS,
     )
     return model, field_names
 
-def get_cloze_model(template, model_id):
+
+def _build_cloze_model(template: CustomTemplateSchema, model_id: int) -> genanki.Model:
     return genanki.Model(
         model_id,
         template.name,
         model_type=genanki.Model.CLOZE,
-        fields=[
-            {'name': 'Text'},
-            {'name': 'Extra'},
-            {'name': 'Audio'},
-        ],
-        templates=[{
-            'name': template.name,
-            'qfmt': template.qfmt,
-            'afmt': template.afmt,
-        }],
+        fields=[{'name': f} for f in CLOZE_FIELDS],
+        templates=[{'name': template.name, 'qfmt': template.qfmt, 'afmt': template.afmt}],
         css=CLOZE_CSS,
     )
 
-def create_anki_package(req: DeckRequest) -> str:
-    """Creates the anki package and returns the file path."""
-    deck_id = generate_model_id()
-    deck = genanki.Deck(deck_id, req.deck_name)
 
-    # Build (template_meta, model, field_names) triples
-    models: list[tuple] = []
-    for t in req.templates:
-        mid = generate_model_id()
+def _build_model_entries(templates: list[CustomTemplateSchema]) -> list[ModelEntry]:
+    entries: list[ModelEntry] = []
+    for t in templates:
+        mid = _generate_model_id()
         if t.is_cloze:
-            models.append((t, get_cloze_model(t, mid), None))
+            entries.append(ModelEntry(template=t, model=_build_cloze_model(t, mid), field_names=None))
         else:
-            model, field_names = get_base_model(t, mid)
-            models.append((t, model, field_names))
+            model, field_names = _build_base_model(t, mid)
+            entries.append(ModelEntry(template=t, model=model, field_names=field_names))
+    return entries
 
-    media_files = []
+
+def _prepare_media(card: CardData) -> tuple[dict[str, str], list[str]]:
+    collected: list[str] = []
+
+    audio_field = ""
+    if card.audio_path and Path(card.audio_path).exists():
+        collected.append(card.audio_path)
+        audio_field = f"[sound:{Path(card.audio_path).name}]"
+
+    image_field = ""
+    if card.image_path and Path(card.image_path).exists():
+        collected.append(card.image_path)
+        image_field = (
+            f'<figure class="card-image-wrap">'
+            f'<img src="{Path(card.image_path).name}" class="card-image"'
+            f' alt="Source: Pixabay (pixabay.com)"'
+            f' title="Source: Pixabay (pixabay.com)">'
+            f'<figcaption class="card-image-credit">Source: Pixabay</figcaption>'
+            f'</figure>'
+        )
+
+    return {'audio': audio_field, 'image': image_field}, collected
+
+
+def _add_cloze_note(deck: genanki.Deck, card: CardData, model: genanki.Model, extra: dict[str, str]) -> None:
+    pattern = re.compile(rf'\b{re.escape(card.word)}\b', re.IGNORECASE)
+    if not pattern.search(card.example):
+        return
+    cloze_text = pattern.sub(f"{{{{c1::{card.word}}}}}", card.example, count=1)
+    extra_info = (
+        f"<div class='definition'>"
+        f"<span class='word'>{card.word}</span> "
+        f"<span class='part-of-speech'>{card.partOfSpeech}</span> "
+        f"<span class='phonetic'>{card.phonetic}</span>"
+        f"<br><br>{card.definition}</div>"
+    )
+    fields = [cloze_text, extra_info, extra.get('audio', ''), extra.get('image', '')]
+    deck.add_note(genanki.Note(model=model, fields=fields))
+
+
+def create_anki_package(req: DeckRequest) -> str:
+    output_dir = Path(req.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    deck = genanki.Deck(_generate_model_id(), req.deck_name)
+    entries = _build_model_entries(req.templates)
+    media_files: list[str] = []
 
     for card in req.cards:
-        # Prepare audio field
-        audio_field = ""
-        if card.audio_path and os.path.exists(card.audio_path):
-            media_files.append(card.audio_path)
-            filename = os.path.basename(card.audio_path)
-            audio_field = f"[sound:{filename}]"
-
-        # Prepare image field
-        image_field = ""
-        if card.image_path and os.path.exists(card.image_path):
-            media_files.append(card.image_path)
-            img_filename = os.path.basename(card.image_path)
-            image_field = f'<img src="{img_filename}" style="max-width:300px; max-height:200px;">'
-
-        extra = {'audio': audio_field, 'image': image_field}
-
-        for template_meta, model, field_names in models:
-            if template_meta.is_cloze:
-                if card.word.lower() in card.example.lower():
-                    pattern = re.compile(re.escape(card.word), re.IGNORECASE)
-                    cloze_text = pattern.sub(f"{{{{c1::{card.word}}}}}", card.example, count=1)
-                    extra_info = (
-                        f"<div style='text-align:left; font-size: 16px;'>"
-                        f"<b>{card.word}</b> ({card.partOfSpeech}) &bull; {card.phonetic}"
-                        f"<br><br>{card.definition}</div>"
-                    )
-                    note = genanki.Note(
-                        model=model,
-                        fields=[cloze_text, extra_info, audio_field],
-                    )
-                    deck.add_note(note)
+        extra, card_media = _prepare_media(card)
+        media_files.extend(card_media)
+        for entry in entries:
+            if entry.template.is_cloze:
+                _add_cloze_note(deck, card, entry.model, extra)
             else:
-                field_values = [FIELD_VALUE_MAP[f](card, extra) for f in field_names]
-                note = genanki.Note(model=model, fields=field_values)
-                deck.add_note(note)
+                field_values = [FIELD_VALUE_MAP[f](card, extra) for f in entry.field_names]
+                deck.add_note(genanki.Note(model=entry.model, fields=field_values))
 
     package = genanki.Package(deck)
     package.media_files = media_files
 
-    if req.cards and req.cards[0].audio_path:
-        out_dir = os.path.dirname(req.cards[0].audio_path)
-    else:
-        out_dir = "/tmp"
-
-    out_file = os.path.join(out_dir, f"{req.deck_uuid}.apkg")
-
-    package.write_to_file(out_file)
-    return out_file
+    out_file = output_dir / f"{req.deck_uuid}.apkg"
+    package.write_to_file(str(out_file))
+    return str(out_file)

@@ -19,8 +19,8 @@ import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { Save, Plus, Trash2, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 
-import { useTemplates, CustomTemplate, FieldType } from "@/hooks/useTemplates";
-import { useAuth } from "@/components/AuthProvider";
+import { useTemplates } from "@/hooks/useTemplates";
+import type { CustomTemplate, FieldType } from "@/lib/types/template";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import { DraggablePaletteItem } from "./DraggablePaletteItem";
 import { DroppableCanvas } from "./DroppableCanvas";
 import { SortableField } from "./SortableField";
+import { FIELD_EMOJI, MAX_FIELDS_PER_SIDE } from "./fieldMeta";
 
 const AVAILABLE_FIELDS: FieldType[] = [
   "Word",
@@ -160,6 +161,9 @@ export default function TemplatesPage() {
       return;
     }
 
+    const targetItems = overContainer === "front" ? frontItems : backItems;
+    if (targetItems.length >= MAX_FIELDS_PER_SIDE) return;
+
     const setItems = {
       front: setFrontItems,
       back: setBackItems,
@@ -199,12 +203,20 @@ export default function TemplatesPage() {
     if (active.data.current?.isPaletteItem) {
       const type = active.data.current.type as FieldType;
       const newItem = { id: uuidv4(), type };
-      
+
       const overContainer = over.data.current?.sortable?.containerId || over.id;
-      
+
       if (overContainer === "front") {
+        if (frontItems.length >= MAX_FIELDS_PER_SIDE) {
+          toast.error(`Front side is full (max ${MAX_FIELDS_PER_SIDE} fields).`);
+          return;
+        }
         setFrontItems((prev) => [...prev, newItem]);
       } else if (overContainer === "back") {
+        if (backItems.length >= MAX_FIELDS_PER_SIDE) {
+          toast.error(`Back side is full (max ${MAX_FIELDS_PER_SIDE} fields).`);
+          return;
+        }
         setBackItems((prev) => [...prev, newItem]);
       }
       return;
@@ -328,9 +340,10 @@ export default function TemplatesPage() {
 
             {/* Overlay for dragging item */}
             <DragOverlay dropAnimation={{ duration: 150, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
-              {activeId ? (
+              {activeId && activeType ? (
                 <div className="flex items-center gap-3 bg-white border-2 border-blue-400 rounded-lg p-3 shadow-xl opacity-90 scale-105">
                   <GripVertical size={18} className="text-slate-400" />
+                  <span className="text-base leading-none">{FIELD_EMOJI[activeType]}</span>
                   <span className="font-medium text-slate-700">{activeType}</span>
                 </div>
               ) : null}

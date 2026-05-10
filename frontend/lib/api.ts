@@ -1,4 +1,4 @@
-import { DictionaryEntry } from './types';
+import type { DictionaryEntry } from '@/lib/types/dictionary';
 import { createClient } from './supabase';
 
 // In Next.js, env variables prefixed with NEXT_PUBLIC_ are available in the browser.
@@ -35,18 +35,20 @@ export const LexisApi = {
    * Fetches definitions for a given word from the backend.
    */
   async getDefinition(word: string): Promise<DictionaryEntry[]> {
-    const response = await fetch(`${API_BASE_URL}/dictionary/${encodeURIComponent(word)}`);
+    const response = await fetch(`${API_BASE_URL}/dictionary/${encodeURIComponent(word)}`, {
+      headers: { ...(await getAuthHeaders()) },
+    });
     return handleResponse<DictionaryEntry[]>(response);
   },
 
   /**
    * Generates an example sentence using the LLM via the backend.
    */
-  async generateExample(word: string, definition: string, apiKey?: string | null): Promise<{ example: string }> {
-    const response = await fetch(`${API_BASE_URL}/dictionary/example`, {
+  async generateExample(word: string, definition: string): Promise<{ example: string }> {
+    const response = await fetch(`${API_BASE_URL}/ai/example`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ word, definition, apiKey }),
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
+      body: JSON.stringify({ word, definition }),
     });
     return handleResponse<{ example: string }>(response);
   },
@@ -57,7 +59,7 @@ export const LexisApi = {
   async generateAudio(text: string, accent: 'US' | 'GB' = 'US', gender: 'MALE' | 'FEMALE' = 'FEMALE'): Promise<{ audioBase64: string }> {
     const response = await fetch(`${API_BASE_URL}/tts/generate`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
       body: JSON.stringify({ text, accent, gender }),
     });
     return handleResponse<{ audioBase64: string }>(response);
@@ -92,40 +94,6 @@ export const LexisApi = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new ApiError(response.status, errorData.message || 'Failed to generate Anki deck.');
-    }
-    return response.blob();
-  },
-
-  async exportDeck(payload: {
-    deckId: string;
-    templateIds: string[];
-    ttsSettings: { accent: string; gender: string };
-  }): Promise<Blob> {
-    const response = await fetch(`${API_BASE_URL}/export/deck`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(response.status, errorData.message || 'Failed to export deck.');
-    }
-    return response.blob();
-  },
-
-  async exportDecksArchive(payload: {
-    deckIds: string[];
-    templateIds: string[];
-    ttsSettings: { accent: string; gender: string };
-  }): Promise<Blob> {
-    const response = await fetch(`${API_BASE_URL}/export/decks/archive`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(response.status, errorData.message || 'Failed to export archive.');
     }
     return response.blob();
   },

@@ -1,5 +1,7 @@
-from typing import List, Optional
+from __future__ import annotations
+
 from pydantic import BaseModel
+
 
 class CardData(BaseModel):
     word: str
@@ -7,8 +9,9 @@ class CardData(BaseModel):
     phonetic: str
     definition: str
     example: str
-    audio_path: Optional[str] = None
-    image_path: Optional[str] = None
+    audio_path: str | None = None
+    image_path: str | None = None
+
 
 class CustomTemplateSchema(BaseModel):
     name: str
@@ -16,8 +19,15 @@ class CustomTemplateSchema(BaseModel):
     qfmt: str
     afmt: str
 
+
 class DeckRequest(BaseModel):
     deck_name: str
     deck_uuid: str
-    cards: List[CardData]
-    templates: List[CustomTemplateSchema]
+    output_dir: str
+    cards: list[CardData]
+    templates: list[CustomTemplateSchema]
+
+
+class GenerateResponse(BaseModel):
+    status: str
+    file_path: str

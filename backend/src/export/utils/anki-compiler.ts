@@ -1,16 +1,26 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/types/database.types';
 
-type FieldType = 'Word' | 'PartOfSpeech' | 'Phonetic' | 'Definition' | 'Example' | 'Audio' | 'Image' | 'TypeIn' | 'Cloze';
+type FieldType =
+  | 'Word'
+  | 'PartOfSpeech'
+  | 'Phonetic'
+  | 'Definition'
+  | 'Example'
+  | 'Audio'
+  | 'Image'
+  | 'TypeIn'
+  | 'Cloze';
 
 const FIELD_SNIPPETS: Record<FieldType, string> = {
-  Word: '<div class="lx-word">{{Word}}</div>',
-  PartOfSpeech: '<div class="lx-meta"><span class="lx-pos">{{PartOfSpeech}}</span></div>',
-  Phonetic: '<div class="lx-meta"><span class="lx-phonetic">{{Phonetic}}</span></div>',
-  Definition: '<div class="lx-definition"><b>Definition:</b> {{Definition}}</div>',
-  Example: '<div class="lx-example">&ldquo;{{Example}}&rdquo;</div>',
-  Audio: '<div class="lx-audio">{{Audio}}</div>',
-  Image: '<div class="lx-image">{{#Image}}{{Image}}{{/Image}}</div>',
-  TypeIn: '<div class="lx-typein">{{type:Word}}</div>',
+  Word: '<div class="word">{{Word}}</div>',
+  PartOfSpeech: '<span class="part-of-speech">{{PartOfSpeech}}</span>',
+  Phonetic: '<span class="phonetic">{{Phonetic}}</span>',
+  Definition: '<div class="definition">{{Definition}}</div>',
+  Example: '{{#Example}}<div class=”example”>”{{Example}}”</div>{{/Example}}',
+  Audio: '<div class="card-audio">{{Audio}}</div>',
+  Image: '<div class="card-image-container">{{#Image}}{{Image}}{{/Image}}</div>',
+  TypeIn: '<div class="card-type-in">{{type:Word}}</div>',
   Cloze: '{{cloze:Text}}',
 };
 
@@ -32,13 +42,28 @@ const DEFAULT_TEMPLATES_MAP: Record<string, TemplateRaw> = {
     name: 'Production',
     isCloze: false,
     frontFields: ['Definition'],
-    backFields: ['Word', 'PartOfSpeech', 'Phonetic', 'Example', 'Image', 'Audio'],
+    backFields: [
+      'Word',
+      'PartOfSpeech',
+      'Phonetic',
+      'Example',
+      'Image',
+      'Audio',
+    ],
   },
   'default-type-in': {
     name: 'Type-In',
     isCloze: false,
     frontFields: ['Definition', 'TypeIn'],
-    backFields: ['Definition', 'TypeIn', 'PartOfSpeech', 'Phonetic', 'Example', 'Image', 'Audio'],
+    backFields: [
+      'Definition',
+      'TypeIn',
+      'PartOfSpeech',
+      'Phonetic',
+      'Example',
+      'Image',
+      'Audio',
+    ],
   },
   'default-cloze': {
     name: 'Cloze',
@@ -61,7 +86,7 @@ function compileRaw(raw: TemplateRaw): CompiledTemplate {
       name: raw.name,
       is_cloze: true,
       qfmt: '{{cloze:Text}}',
-      afmt: '{{cloze:Text}}<br><br><div style="text-align:left;">{{Extra}}</div><div style="margin-top:16px;">{{Audio}}</div>',
+      afmt: '{{cloze:Text}}<hr class="card-hr"><div class="definition">{{Extra}}</div><div class="card-audio">{{Audio}}</div>',
     };
   }
   return {
@@ -74,23 +99,20 @@ function compileRaw(raw: TemplateRaw): CompiledTemplate {
 
 export async function resolveAndCompileTemplates(
   templateIds: string[],
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
 ): Promise<CompiledTemplate[]> {
-  const compiled: CompiledTemplate[] = [];
-
-  for (const id of templateIds) {
-    if (id.startsWith('default-')) {
-      const raw = DEFAULT_TEMPLATES_MAP[id];
-      if (raw) compiled.push(compileRaw(raw));
-    }
-  }
+  const resultMap = new Map<string, CompiledTemplate>();
 
   const customIds = templateIds.filter((id) => !id.startsWith('default-'));
   if (customIds.length > 0) {
-    const { data } = await supabase.from('templates').select('*').in('id', customIds);
+    const { data } = await supabase
+      .from('templates')
+      .select('*')
+      .in('id', customIds);
     if (data) {
       for (const row of data) {
-        compiled.push(
+        resultMap.set(
+          row.id,
           compileRaw({
             name: row.name,
             isCloze: row.is_cloze,
@@ -101,6 +123,16 @@ export async function resolveAndCompileTemplates(
       }
     }
   }
+
+  const compiled = templateIds
+    .map((id) => {
+      if (id.startsWith('default-')) {
+        const raw = DEFAULT_TEMPLATES_MAP[id];
+        return raw ? compileRaw(raw) : null;
+      }
+      return resultMap.get(id) ?? null;
+    })
+    .filter((t): t is CompiledTemplate => t !== null);
 
   if (compiled.length === 0) {
     compiled.push(compileRaw(DEFAULT_TEMPLATES_MAP['default-recognition']));

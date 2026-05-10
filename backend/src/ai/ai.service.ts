@@ -3,83 +3,74 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import OpenAI from 'openai';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseService } from '@/supabase/supabase.service';
+import { Database } from '@/types/database.types';
+import { LlmProvider, DEFAULT_MODELS, GenerateExampleFn } from './ai.types';
+import { createAdapter } from './ai.providers';
 
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
-  private readonly openai: OpenAI;
-  private readonly model: string;
+  private readonly serverAdapter: GenerateExampleFn;
+  private readonly supabase: SupabaseClient<Database>;
 
-  constructor(private readonly configService: ConfigService) {
-    this.openai = new OpenAI({
-      apiKey: this.configService.getOrThrow<string>('OPENROUTER_API_KEY'),
-      baseURL: 'https://openrouter.ai/api/v1',
-      defaultHeaders: {
-        'HTTP-Referer': 'http://localhost:3000',
-        'X-Title': 'Lexis Automator',
-      },
-    });
-
-    this.model =
-      this.configService.get<string>('OPENROUTER_MODEL') ||
-      'openai/gpt-4o-mini';
+  constructor(configService: ConfigService, supabaseService: SupabaseService) {
+    const provider = configService.getOrThrow<LlmProvider>('LLM_PROVIDER');
+    const apiKey = configService.getOrThrow<string>('LLM_API_KEY');
+    const model =
+      configService.get<string>('LLM_MODEL') ?? DEFAULT_MODELS[provider];
+    const appUrl = configService.get<string>('APP_URL');
+    this.serverAdapter = createAdapter(provider, apiKey, model, appUrl);
+    this.supabase = supabaseService.client;
   }
 
-  async generateExample(word: string, definition: string, apiKey?: string): Promise<string> {
-    this.logger.log(`generateExample called — word: "${word}", definition length: ${definition?.length}`);
-    if (!word || !definition) {
-      throw new InternalServerErrorException('word and definition are required');
+  private async getUserAdapter(userId: string): Promise<GenerateExampleFn | null> {
+    const { data: profile } = await this.supabase
+      .from('profiles')
+      .select('ai_key_id, ai_provider')
+      .eq('id', userId)
+      .single();
+
+    if (!profile?.ai_key_id) return null;
+
+    const { data: decrypted, error } = await this.supabase
+      .rpc('get_user_ai_key', { p_user_id: userId });
+
+    if (error || !decrypted) return null;
+
+    const provider = (profile.ai_provider as LlmProvider) ?? LlmProvider.OPENAI;
+    return createAdapter(provider, decrypted, DEFAULT_MODELS[provider]);
+  }
+
+  async generateExample(
+    word: string,
+    definition: string,
+    userId?: string,
+  ): Promise<string> {
+    let adapter = this.serverAdapter;
+
+    if (userId) {
+      const userAdapter = await this.getUserAdapter(userId);
+      if (userAdapter) adapter = userAdapter;
     }
+
     try {
-      let client = this.openai;
-      let targetModel = this.model;
-
-      if (apiKey) {
-        // Use OpenAI directly if an sk- key is provided
-        client = new OpenAI({ apiKey });
-        // Optionally override the model for raw OpenAI keys if the default is an OpenRouter format
-        targetModel = 'gpt-4o-mini';
-      }
-
-      const response = await client.chat.completions.create({
-        model: targetModel,
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are an English teacher generating example sentences for a dictionary app. ' +
-              'Given a word and its specific definition, create a single, clear, and natural example sentence ' +
-              "demonstrating the word's usage in that exact sense. " +
-              'Return ONLY the sentence, without any quotes, explanations, or introductory text. ' +
-              'The sentence MUST contain the requested word or a form of it.',
-          },
-          {
-            role: 'user',
-            content: `Word: ${word}\nDefinition: ${definition}`,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 300,
-      });
-
-      const result = response.choices[0]?.message?.content?.trim() || '';
+      const result = await adapter(word, definition);
 
       if (!result) {
-        this.logger.error(
-          'Empty response from LLM. Raw response: ' + JSON.stringify(response),
-        );
+        this.logger.error(`Empty LLM response for word "${word}"`);
         throw new InternalServerErrorException('Empty response from LLM');
       }
 
       return result;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error('AI generation failed', error);
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
       throw new InternalServerErrorException(
-        `Failed to generate example sentence: ${errorMessage}`,
+        `Failed to generate example sentence: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }

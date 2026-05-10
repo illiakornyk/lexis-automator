@@ -4,47 +4,9 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { createClient } from '@/lib/supabase';
 import { toast } from 'sonner';
-
-export type FieldType = 'Word' | 'PartOfSpeech' | 'Phonetic' | 'Definition' | 'Example' | 'Audio' | 'Image' | 'Cloze' | 'TypeIn';
-
-export interface CustomTemplate {
-    id: string;
-    name: string;
-    isCloze: boolean;
-    frontFields: FieldType[];
-    backFields: FieldType[];
-}
-
-export const DEFAULT_TEMPLATES: CustomTemplate[] = [
-    {
-        id: 'default-recognition',
-        name: 'Recognition',
-        isCloze: false,
-        frontFields: ['Word', 'PartOfSpeech', 'Phonetic'],
-        backFields: ['Word', 'Definition', 'Example', 'Audio']
-    },
-    {
-        id: 'default-production',
-        name: 'Production',
-        isCloze: false,
-        frontFields: ['Definition'],
-        backFields: ['Word', 'PartOfSpeech', 'Phonetic', 'Example', 'Audio']
-    },
-    {
-        id: 'default-type-in',
-        name: 'Type-In',
-        isCloze: false,
-        frontFields: ['Definition', 'TypeIn'],
-        backFields: ['Definition', 'TypeIn', 'PartOfSpeech', 'Phonetic', 'Example', 'Audio']
-    },
-    {
-        id: 'default-cloze',
-        name: 'Cloze',
-        isCloze: true,
-        frontFields: ['Cloze'],
-        backFields: ['Cloze', 'Audio']
-    }
-];
+import type { Tables } from '@/lib/types/database.types';
+import type { CustomTemplate, FieldType } from '@/lib/types/template';
+import { DEFAULT_TEMPLATES } from '@/lib/types/template';
 
 export function useTemplates() {
     const { user, isLoading: authLoading } = useAuth();
@@ -52,7 +14,7 @@ export function useTemplates() {
     const [isLoaded, setIsLoaded] = useState(false);
     const supabase = createClient();
 
-    const mapDbToTemplate = (row: any): CustomTemplate => ({
+    const mapDbToTemplate = (row: Tables<'templates'>): CustomTemplate => ({
         id: row.id,
         name: row.name,
         isCloze: row.is_cloze,
@@ -168,8 +130,9 @@ export function useTemplates() {
             if (data) {
                 setTemplates(prev => prev.map(t => t.id === template.id ? mapDbToTemplate(data) : t));
             }
-        } catch (error: any) {
-            toast.error("Failed to save template to cloud");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "Failed to save template to cloud";
+            toast.error(message);
             console.error(error);
             // Revert optimistic update
             setTemplates(templates);
@@ -201,8 +164,9 @@ export function useTemplates() {
                 .eq('user_id', user.id);
 
             if (error) throw error;
-        } catch (error: any) {
-            toast.error("Failed to update template in cloud");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "Failed to update template in cloud";
+            toast.error(message);
             console.error(error);
             // Revert optimistic update
             setTemplates(templates);
@@ -229,8 +193,9 @@ export function useTemplates() {
                 .eq('user_id', user.id);
 
             if (error) throw error;
-        } catch (error: any) {
-            toast.error("Failed to delete template from cloud");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "Failed to delete template from cloud";
+            toast.error(message);
             console.error(error);
             // Revert optimistic update
             setTemplates(templates);

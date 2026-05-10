@@ -66,5 +66,20 @@ export function useDeckCards(deckId: string) {
     );
   };
 
-  return { cards, isLoading, removeCard, updateCardImage };
+  const updateCardExample = async (cardId: string, example: string) => {
+    setCards((prev) =>
+      prev.map((c) => (c.id === cardId ? { ...c, example } : c)),
+    );
+    try {
+      const { error } = await supabase
+        .from('saved_cards')
+        .update({ example })
+        .eq('id', cardId);
+      if (error) throw error;
+    } catch {
+      toast.error('Failed to save example.');
+    }
+  };
+
+  return { cards, isLoading, removeCard, updateCardImage, updateCardExample };
 }

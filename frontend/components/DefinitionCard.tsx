@@ -4,6 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DefinitionCardProps {
   defId: string;
@@ -11,6 +12,7 @@ interface DefinitionCardProps {
   example?: string;
   isSelected: boolean;
   isGenerating: boolean;
+  isAiGenerated: boolean;
   onToggleSelection: (id: string) => void;
   onGenerateExample: () => void;
 }
@@ -21,6 +23,7 @@ export function DefinitionCard({
   example,
   isSelected,
   isGenerating,
+  isAiGenerated,
   onToggleSelection,
   onGenerateExample,
 }: DefinitionCardProps) {
@@ -39,7 +42,7 @@ export function DefinitionCard({
             id={`check-${defId}`}
             checked={isSelected}
             onCheckedChange={() => onToggleSelection(defId)}
-            className="mt-1 h-5 w-5 border-stone-400 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+            className="mt-1 h-5 w-5 shrink-0"
             onClick={(e) => e.stopPropagation()}
           />
           <div className="grid gap-1.5 flex-1">
@@ -54,6 +57,18 @@ export function DefinitionCard({
         {example ? (
           <div className="bg-stone-100 border border-stone-200 rounded-md p-3 text-sm text-stone-600 mb-3 italic">
             &quot;{example}&quot;
+            {isAiGenerated && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="ml-2 not-italic text-[10px] font-medium text-violet-500 bg-violet-50 border border-violet-200 rounded px-1.5 py-0.5 align-middle cursor-default">
+                    ✦ AI
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  This example was generated with AI
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
         ) : (
           <div className="bg-stone-100/60 border border-stone-200 rounded-md p-3 text-sm text-stone-300 mb-3 italic select-none">

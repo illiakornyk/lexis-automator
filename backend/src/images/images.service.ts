@@ -1,68 +1,69 @@
-import {
-  Injectable,
-  Logger,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database.types';
+import { SupabaseService } from '@/supabase/supabase.service';
 import { firstValueFrom } from 'rxjs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
+import sharp from 'sharp';
+import type { ImageSearchResult, PixabaySearchResponse } from './images.types';
 
 const MAX_IMAGE_BYTES = 1 * 1024 * 1024;
+const HD_WIDTH = 1280;
+const HD_HEIGHT = 720;
 const BUCKET = 'card-images';
 
-function extFromContentType(ct: string): string {
-  const map: Record<string, string> = {
-    'image/jpeg': 'jpg',
-    'image/jpg': 'jpg',
-    'image/png': 'png',
-    'image/webp': 'webp',
-    'image/gif': 'gif',
-    'image/avif': 'avif',
-  };
-  const base = ct.split(';')[0].trim().toLowerCase();
-  return map[base] || 'jpg';
+async function toWebp(input: Buffer): Promise<Buffer> {
+  return sharp(input)
+    .resize(HD_WIDTH, HD_HEIGHT, { fit: 'inside', withoutEnlargement: true })
+    .webp({ quality: 82 })
+    .toBuffer();
 }
 
 @Injectable()
 export class ImagesService {
   private readonly logger = new Logger(ImagesService.name);
-  private readonly supabase: SupabaseClient;
+  private readonly supabase: SupabaseClient<Database>;
   private readonly pixabayKey: string;
 
   constructor(
     private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
+    configService: ConfigService,
+    supabaseService: SupabaseService,
   ) {
-    this.supabase = createClient(
-      this.configService.getOrThrow('SUPABASE_URL'),
-      this.configService.getOrThrow('SUPABASE_SERVICE_ROLE_KEY'),
-    );
-    this.pixabayKey = this.configService.getOrThrow('PIXABAY_API_KEY');
+    this.supabase = supabaseService.client;
+    this.pixabayKey = configService.getOrThrow('PIXABAY_API_KEY');
   }
 
-  async searchImages(query: string, page = 1) {
+  async searchImages(query: string, page = 1): Promise<ImageSearchResult[]> {
     const url = `https://pixabay.com/api/?key=${this.pixabayKey}&q=${encodeURIComponent(query)}&image_type=photo&safesearch=true&per_page=20&page=${page}`;
-    const resp = await firstValueFrom(this.httpService.get(url));
-    return (resp.data.hits as any[]).map((h) => ({
+    const resp = await firstValueFrom(
+      this.httpService.get<PixabaySearchResponse>(url),
+    );
+    return resp.data.hits.map((h) => ({
       id: String(h.id),
-      previewUrl: h.previewURL as string,
-      webformatUrl: h.webformatURL as string,
+      previewUrl: h.previewURL,
+      webformatUrl: h.webformatURL,
     }));
   }
 
-  async saveFromUrl(cardId: string, userId: string, url: string): Promise<string> {
+  async saveFromUrl(
+    cardId: string,
+    userId: string,
+    url: string,
+  ): Promise<string> {
     let buffer: Buffer;
-    let contentType: string;
 
     try {
       const resp = await firstValueFrom(
         this.httpService.get<ArrayBuffer>(url, { responseType: 'arraybuffer' }),
       );
       buffer = Buffer.from(resp.data);
-      contentType = (resp.headers['content-type'] as string) || 'image/jpeg';
-    } catch (e) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'unknown error';
+      this.logger.warn(`Image download failed for ${url}: ${message}`);
       throw new BadRequestException('Failed to download image from URL');
     }
 
@@ -70,28 +71,31 @@ export class ImagesService {
       throw new BadRequestException('Image exceeds 1 MB limit');
     }
 
-    return this.storeBuffer(cardId, userId, buffer, contentType);
+    return this.storeBuffer(cardId, userId, buffer);
   }
 
-  async saveFromUpload(cardId: string, userId: string, buffer: Buffer, mimeType: string): Promise<string> {
+  async saveFromUpload(
+    cardId: string,
+    userId: string,
+    buffer: Buffer,
+  ): Promise<string> {
     if (buffer.length > MAX_IMAGE_BYTES) {
       throw new BadRequestException('Image exceeds 1 MB limit');
     }
-    return this.storeBuffer(cardId, userId, buffer, mimeType);
+    return this.storeBuffer(cardId, userId, buffer);
   }
 
   private async storeBuffer(
     cardId: string,
     userId: string,
     buffer: Buffer,
-    contentType: string,
   ): Promise<string> {
-    const ext = extFromContentType(contentType);
-    const storagePath = `${userId}/${cardId}.${ext}`;
+    const webpBuffer = await toWebp(buffer);
+    const storagePath = `${userId}/${cardId}.webp`;
 
     const { error } = await this.supabase.storage
       .from(BUCKET)
-      .upload(storagePath, buffer, { contentType, upsert: true });
+      .upload(storagePath, webpBuffer, { contentType: 'image/webp', upsert: true });
 
     if (error) {
       throw new BadRequestException(`Storage upload failed: ${error.message}`);
@@ -103,7 +107,19 @@ export class ImagesService {
       .eq('id', cardId);
 
     if (updateError) {
-      this.logger.error('Failed to update saved_cards.image_path', updateError);
+      this.logger.error(
+        `Failed to update saved_cards.image_path for card ${cardId}`,
+        updateError,
+      );
+      const { error: removeError } = await this.supabase.storage
+        .from(BUCKET)
+        .remove([storagePath]);
+      if (removeError) {
+        this.logger.error(
+          `Failed to clean up orphaned upload at ${storagePath}: ${removeError.message}`,
+        );
+      }
+      throw new BadRequestException('Failed to attach image to card');
     }
 
     return storagePath;
@@ -126,11 +142,15 @@ export class ImagesService {
       .eq('id', cardId);
   }
 
-  async createSignedUrl(storagePath: string, expiresIn = 3600): Promise<string> {
+  async createSignedUrl(
+    storagePath: string,
+    expiresIn = 3600,
+  ): Promise<string> {
     const { data, error } = await this.supabase.storage
       .from(BUCKET)
       .createSignedUrl(storagePath, expiresIn);
-    if (error || !data) throw new BadRequestException('Failed to create signed URL');
+    if (error || !data)
+      throw new BadRequestException('Failed to create signed URL');
     return data.signedUrl;
   }
 
@@ -138,15 +158,15 @@ export class ImagesService {
     const { data, error } = await this.supabase.storage
       .from(BUCKET)
       .download(storagePath);
-    if (error || !data) throw new Error(`Failed to download image: ${storagePath}`);
+    if (error || !data)
+      throw new Error(`Failed to download image: ${storagePath}`);
 
     const buffer = Buffer.from(await data.arrayBuffer());
     const ext = path.extname(storagePath) || '.jpg';
     const filename = `image_${path.basename(storagePath, ext)}${ext}`;
     const destPath = path.join(destDir, filename);
 
-    const { writeFile } = await import('fs/promises');
-    await writeFile(destPath, buffer);
+    await fs.writeFile(destPath, buffer);
     return destPath;
   }
 }

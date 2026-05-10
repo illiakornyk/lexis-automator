@@ -11,21 +11,10 @@ import { SearchHeader } from "@/components/SearchHeader";
 import { WordHeader } from "@/components/WordHeader";
 import { DefinitionCard } from "@/components/DefinitionCard";
 import { ExportBar } from "@/components/ExportBar";
-import { useLexisAutomator } from "@/hooks/useLexisAutomator";
-import { useExportJobsContext } from "@/contexts/ExportJobsContext";
+import { LexisAutomatorProvider, useLexisAutomatorContext } from "@/contexts/LexisAutomatorContext";
 
-export default function LexisAutomatorUI() {
-  const { enqueue } = useExportJobsContext();
+function LexisAutomatorUI() {
   const [collapsedPos, setCollapsedPos] = useState<Set<string>>(new Set());
-
-  const toggleCollapse = (pos: string) => {
-    setCollapsedPos((prev) => {
-      const next = new Set(prev);
-      if (next.has(pos)) next.delete(pos);
-      else next.add(pos);
-      return next;
-    });
-  };
 
   const {
     searchQuery,
@@ -35,32 +24,22 @@ export default function LexisAutomatorUI() {
     isLoading,
     selectedDefs,
     generatingExamples,
-    accent,
-    setAccent,
-    gender,
-    setGender,
-    templates,
-    isLoaded,
-    selectedTemplateIds,
-    setSelectedTemplateIds,
-    isExporting,
-    isGeneratingAll,
-    missingExamplesCount,
+    aiGeneratedIds,
     toggleSelection,
     clearSelection,
     handleQueueExport,
     handleSearch,
     handleGenerateExample,
-    handleGenerateAllMissing,
-    handleDownload,
-    decks,
-    decksLoading,
-    selectedDeckId,
-    setSelectedDeckId,
-    isSaving,
-    createDeck,
-    handleSaveToDeck,
-  } = useLexisAutomator();
+  } = useLexisAutomatorContext();
+
+  const toggleCollapse = (pos: string) => {
+    setCollapsedPos((prev) => {
+      const next = new Set(prev);
+      if (next.has(pos)) next.delete(pos);
+      else next.add(pos);
+      return next;
+    });
+  };
 
   const groupedMeanings = useMemo(() => {
     if (!wordData) return new Map<string, Array<{ def: { definition: string; example?: string }; defId: string; mIdx: number; dIdx: number }>>();
@@ -89,7 +68,6 @@ export default function LexisAutomatorUI() {
       />
 
       <main className="max-w-4xl mx-auto px-4 md:px-8 space-y-8">
-        {/* Loading Skeleton */}
         {isLoading && (
           <div className="space-y-6">
             <Skeleton className="h-12 w-48 rounded bg-stone-200" />
@@ -101,7 +79,6 @@ export default function LexisAutomatorUI() {
           </div>
         )}
 
-        {/* Empty State */}
         {!isLoading && !wordData && (
           <div className="text-center py-20 bg-stone-100/80 rounded-2xl border border-dashed border-stone-300">
             <BookOpen className="mx-auto h-12 w-12 text-stone-400 mb-4" />
@@ -120,20 +97,20 @@ export default function LexisAutomatorUI() {
           </div>
         )}
 
-        {/* Results */}
         {!isLoading && wordData && (
           <>
-            <div className="flex items-start justify-between gap-4">
-              <WordHeader word={wordData.word} phonetics={wordData.phonetics} />
-              {selectedDefs.length > 0 && (
-                <button
-                  onClick={clearSelection}
-                  className="shrink-0 mt-2 text-sm text-stone-400 hover:text-stone-600 underline underline-offset-2 transition-colors"
-                >
-                  Unselect all ({selectedDefs.length})
-                </button>
-              )}
-            </div>
+            <WordHeader word={wordData.word} phonetics={wordData.phonetics} />
+            <p className="text-xs text-slate-400 -mt-6">
+              Source:{" "}
+              <a
+                href={`https://en.wiktionary.org/wiki/${encodeURIComponent(wordData.word)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2 hover:text-slate-600 transition-colors"
+              >
+                Wiktionary
+              </a>
+            </p>
 
             <div className="space-y-8">
               {Array.from(groupedMeanings.entries()).map(([pos, items]) => {
@@ -161,6 +138,7 @@ export default function LexisAutomatorUI() {
                             example={def.example}
                             isSelected={selectedDefs.includes(defId)}
                             isGenerating={!!generatingExamples[defId]}
+                            isAiGenerated={aiGeneratedIds.has(defId)}
                             onToggleSelection={toggleSelection}
                             onGenerateExample={() => handleGenerateExample(defId, mIdx, dIdx, def.definition)}
                           />
@@ -175,33 +153,15 @@ export default function LexisAutomatorUI() {
         )}
       </main>
 
-      <ExportBar
-        selectedCount={selectedDefs.length}
-        missingExamplesCount={missingExamplesCount}
-        accent={accent}
-        gender={gender}
-        onAccentChange={setAccent}
-        onGenderChange={setGender}
-        templates={templates}
-        isLoaded={isLoaded}
-        selectedTemplateIds={selectedTemplateIds}
-        onTemplateToggle={(id) => {
-          setSelectedTemplateIds((prev) =>
-            prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
-          );
-        }}
-        isExporting={isSaving}
-        isGeneratingAll={isGeneratingAll}
-        onDownload={() => handleQueueExport(enqueue)}
-        onGenerateAllMissing={handleGenerateAllMissing}
-        decks={decks}
-        decksLoading={decksLoading}
-        selectedDeckId={selectedDeckId}
-        onSelectDeck={setSelectedDeckId}
-        onCreateDeck={async (name) => { const deck = await createDeck(name); return deck?.id ?? null; }}
-        isSaving={isSaving}
-        onSaveToDeck={handleSaveToDeck}
-      />
+      <ExportBar />
     </div>
+  );
+}
+
+export default function LexisAutomatorPage() {
+  return (
+    <LexisAutomatorProvider>
+      <LexisAutomatorUI />
+    </LexisAutomatorProvider>
   );
 }

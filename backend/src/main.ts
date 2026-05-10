@@ -7,8 +7,13 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
+  const corsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:3001')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: 'http://localhost:3001',
+    origin: corsOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   });
 
@@ -18,7 +23,13 @@ async function bootstrap() {
       'API for generating Anki cards and fetching dictionary data',
     )
     .setVersion('1.0')
+    .addBearerAuth()
     .addTag('dictionary')
+    .addTag('ai')
+    .addTag('images')
+    .addTag('tts')
+    .addTag('export')
+    .addTag('export-jobs')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

@@ -1,67 +1,66 @@
 "use client";
 
-import { Loader2, Sparkles, BookmarkPlus, ListPlus } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { Globe, Loader2, Sparkles, BookmarkPlus, User } from "lucide-react";
+import { ExportIcon } from "@/components/icons/ExportIcon";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CustomTemplate } from "@/hooks/useTemplates";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DeckCombobox } from "@/components/DeckCombobox";
-import { Deck } from "@/lib/types/deck";
+import { useLexisAutomatorContext } from "@/contexts/LexisAutomatorContext";
 
-interface ExportBarProps {
-  selectedCount: number;
-  missingExamplesCount: number;
-  accent: string;
-  gender: string;
-  onAccentChange: (value: string) => void;
-  onGenderChange: (value: string) => void;
-  templates: CustomTemplate[];
-  isLoaded: boolean;
-  selectedTemplateIds: string[];
-  onTemplateToggle: (id: string) => void;
-  isExporting: boolean;
-  isGeneratingAll: boolean;
-  onDownload: () => void;
-  onGenerateAllMissing: () => void;
-  decks: Deck[];
-  decksLoading: boolean;
-  selectedDeckId: string | null;
-  onSelectDeck: (id: string) => void;
-  onCreateDeck: (name: string) => Promise<string | null>;
-  isSaving: boolean;
-  onSaveToDeck: () => void;
-}
+const CSS_VAR = "--export-bar-height";
 
-export function ExportBar({
-  selectedCount,
-  missingExamplesCount,
-  accent,
-  gender,
-  onAccentChange,
-  onGenderChange,
-  templates,
-  isLoaded,
-  selectedTemplateIds,
-  onTemplateToggle,
-  isExporting,
-  isGeneratingAll,
-  onDownload,
-  onGenerateAllMissing,
-  decks,
-  decksLoading,
-  selectedDeckId,
-  onSelectDeck,
-  onCreateDeck,
-  isSaving,
-  onSaveToDeck,
-}: ExportBarProps) {
+export function ExportBar() {
+  const {
+    searchQuery,
+    selectedDefs,
+    missingExamplesCount,
+    accent,
+    setAccent,
+    gender,
+    setGender,
+    templates,
+    isLoaded,
+    selectedTemplateIds,
+    toggleTemplateId,
+    isExporting,
+    isGeneratingAll,
+    handleDownload,
+    handleGenerateAllMissing,
+    decks,
+    decksLoading,
+    selectedDeckId,
+    setSelectedDeckId,
+    isSaving,
+    createDeck,
+    handleSaveToDeck,
+  } = useLexisAutomatorContext();
+
+  const selectedCount = selectedDefs.length;
+  const barRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      document.documentElement.style.setProperty(CSS_VAR, el.offsetHeight + "px");
+    });
+    ro.observe(el);
+    document.documentElement.style.setProperty(CSS_VAR, el.offsetHeight + "px");
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.removeProperty(CSS_VAR);
+    };
+  }, [selectedCount > 0]);
+
   if (selectedCount === 0) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-stone-50 border-t border-stone-200 shadow-[0_-4px_24px_-8px_rgba(120,100,60,0.12)]">
+    <div ref={barRef} className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-[0_-4px_24px_-8px_rgba(0,0,0,0.12)]">
       <div className="max-w-4xl mx-auto px-6 py-4">
 
-        {/* Status row */}
         <div className="flex items-center gap-2 mb-4">
           <span className="bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
             {selectedCount}
@@ -71,104 +70,113 @@ export function ExportBar({
           </span>
         </div>
 
-        {/* Three-zone row */}
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 sm:divide-x sm:divide-stone-200">
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 sm:divide-x sm:divide-slate-200">
 
           {/* Zone 1 — Save to Deck */}
-          <div className="flex flex-col gap-2 sm:pr-6 sm:w-56 shrink-0">
-            <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide">
-              Save to deck
-            </p>
+          <div className="flex flex-col gap-2 sm:pr-6 sm:w-64 shrink-0">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Save to deck</p>
             <div className="flex items-center gap-2">
               <DeckCombobox
                 decks={decks}
                 selectedDeckId={selectedDeckId}
-                onSelectDeck={onSelectDeck}
-                onCreateDeck={onCreateDeck}
+                onSelectDeck={setSelectedDeckId}
+                onCreateDeck={async (name) => {
+                  const newDeck = await createDeck(name);
+                  if (newDeck) setSelectedDeckId(newDeck.id);
+                }}
                 isLoading={decksLoading}
+                defaultNewDeckName={searchQuery}
               />
-              <Button
-                onClick={onSaveToDeck}
-                disabled={isSaving || !selectedDeckId}
-                size="sm"
-                variant="outline"
-                className="shrink-0 border-stone-300 text-stone-600 hover:bg-stone-100"
-              >
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <BookmarkPlus className="h-4 w-4" />
-                )}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleSaveToDeck}
+                      disabled={isSaving || !selectedDeckId}
+                      size="sm"
+                      variant="outline"
+                      className="shrink-0 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                    >
+                      {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookmarkPlus className="h-4 w-4" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Save selected cards to deck</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
 
-          {/* Zone 2 — Card types */}
-          <div className="flex flex-col gap-2 sm:px-6 shrink-0">
-            <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide">
-              Card types
-            </p>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          {/* Zone 2 — Card Templates */}
+          <div className="flex flex-col gap-2 sm:px-6 flex-1 min-w-0">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Card templates</p>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 items-start">
               {isLoaded ? (
-                templates.map((t) => (
-                  <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm text-stone-600 select-none">
-                    <Checkbox
-                      checked={selectedTemplateIds.includes(t.id)}
-                      onCheckedChange={() => onTemplateToggle(t.id)}
-                      className="border-stone-400 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
-                    />
-                    {t.name}
-                  </label>
-                ))
+                templates.length > 0 ? (
+                  templates.map((t) => (
+                    <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-600 min-w-0">
+                      <Checkbox
+                        checked={selectedTemplateIds.includes(t.id)}
+                        onCheckedChange={() => toggleTemplateId(t.id)}
+                        className="shrink-0"
+                      />
+                      <span className="truncate">{t.name}</span>
+                    </label>
+                  ))
+                ) : (
+                  <span className="text-slate-400 text-sm col-span-2">No templates</span>
+                )
               ) : (
-                <span className="text-stone-400 text-sm">Loading…</span>
+                <span className="text-slate-400 text-sm col-span-2">Loading…</span>
               )}
             </div>
           </div>
 
-          {/* Zone 3 — Voice + Export */}
-          <div className="flex flex-col gap-2 sm:pl-6 sm:min-w-[340px] flex-1">
-            <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide">
-              Voice and examples
-            </p>
-            <div className="flex items-center gap-1.5">
-              <Select value={accent} onValueChange={onAccentChange}>
-                <SelectTrigger className="flex-1 h-9 text-sm border-stone-300 bg-white text-stone-700">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="US">🇺🇸 American</SelectItem>
-                  <SelectItem value="GB">🇬🇧 British</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={gender} onValueChange={onGenderChange}>
-                <SelectTrigger className="flex-1 h-9 text-sm border-stone-300 bg-white text-stone-700">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="FEMALE">♀ Female</SelectItem>
-                  <SelectItem value="MALE">♂ Male</SelectItem>
-                </SelectContent>
-              </Select>
+          {/* Zone 3 — Voice */}
+          <div className="flex flex-col gap-2 sm:px-6 shrink-0">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Voice</p>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <Globe className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                <Select value={accent} onValueChange={setAccent}>
+                  <SelectTrigger className="w-[110px] h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="US">American</SelectItem>
+                    <SelectItem value="GB">British</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <User className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                <Select value={gender} onValueChange={setGender}>
+                  <SelectTrigger className="w-[110px] h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="FEMALE">Female</SelectItem>
+                    <SelectItem value="MALE">Male</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+          </div>
 
-            {/* Actions */}
-            {missingExamplesCount > 0 && (
-              <div className="flex flex-col gap-1">
-                <p className="text-xs text-stone-400">
-                  AI-generate missing example sentences for selected cards
-                </p>
+          {/* Zone 4 — Export Actions */}
+          <div className="flex flex-col gap-2 sm:pl-6 shrink-0">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Export</p>
+            <div className="flex flex-col gap-2">
+              {missingExamplesCount > 0 && (
                 <Button
-                  onClick={onGenerateAllMissing}
+                  onClick={handleGenerateAllMissing}
                   disabled={isGeneratingAll || isExporting}
                   variant="outline"
-                  size="sm"
-                  className="w-full border-amber-300 text-amber-700 hover:bg-amber-50"
+                  className="h-10 border-amber-300 text-amber-700 hover:bg-amber-50"
                 >
                   {isGeneratingAll ? (
-                    <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Generating {missingExamplesCount}…</>
+                    <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />Writing examples…</>
                   ) : (
-                    <><Sparkles className="mr-1.5 h-3.5 w-3.5" />Generate {missingExamplesCount} missing</>
+                    <><Sparkles className="mr-1.5 h-4 w-4" />Fill {missingExamplesCount} missing example{missingExamplesCount !== 1 ? "s" : ""}</>
                   )}
                 </Button>
               </div>
@@ -184,7 +192,18 @@ export function ExportBar({
               ) : (
                 <><ListPlus className="mr-1.5 h-4 w-4" />Export to Anki</>
               )}
-            </Button>
+              <Button
+                onClick={handleDownload}
+                disabled={isExporting || isGeneratingAll}
+                className="h-10 bg-indigo-600 hover:bg-indigo-700"
+              >
+                {isExporting ? (
+                  <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />Queuing…</>
+                ) : (
+                  <><ExportIcon className="mr-1.5 h-4 w-4" />Export to Anki</>
+                )}
+              </Button>
+            </div>
           </div>
 
         </div>

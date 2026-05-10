@@ -15,7 +15,7 @@ export function SearchHeader({ searchQuery, onSearchQueryChange, onSearch, isLoa
   return (
     <div className="px-4 md:px-8 py-10">
       <div className="max-w-2xl mx-auto">
-        <h2 className="font-heading text-3xl font-bold text-stone-900 text-center mb-2">
+        <h2 className="font-heading text-3xl font-bold text-indigo-900 text-center mb-2">
           Look up any word
         </h2>
         <p className="text-stone-500 text-center mb-6 text-sm">

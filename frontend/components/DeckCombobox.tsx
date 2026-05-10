@@ -22,6 +22,7 @@ interface DeckComboboxProps {
   onSelectDeck: (deckId: string) => void;
   onCreateDeck: (name: string) => Promise<string | null>;
   isLoading: boolean;
+  defaultNewDeckName?: string;
 }
 
 export function DeckCombobox({
@@ -30,6 +31,7 @@ export function DeckCombobox({
   onSelectDeck,
   onCreateDeck,
   isLoading,
+  defaultNewDeckName = "",
 }: DeckComboboxProps) {
   const [open, setOpen] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -38,6 +40,11 @@ export function DeckCombobox({
 
   const selectedDeck = decks.find((d) => d.id === selectedDeckId);
   const canCreateMore = decks.length < 15;
+
+  const openCreateForm = () => {
+    setNewDeckName(defaultNewDeckName);
+    setShowCreate(true);
+  };
 
   const handleCreate = async () => {
     if (!newDeckName.trim()) return;
@@ -50,10 +57,11 @@ export function DeckCombobox({
     setNewDeckName("");
     setShowCreate(false);
     setIsCreating(false);
+    setOpen(false);
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setShowCreate(false); }}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -75,31 +83,9 @@ export function DeckCombobox({
           <CommandInput placeholder="Search decks..." />
           <CommandList>
             <CommandEmpty>No decks found.</CommandEmpty>
-            <CommandGroup>
-              {decks.map((deck) => (
-                <CommandItem
-                  key={deck.id}
-                  value={deck.name}
-                  onSelect={() => {
-                    onSelectDeck(deck.id);
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={`mr-2 h-4 w-4 ${
-                      selectedDeckId === deck.id ? "opacity-100" : "opacity-0"
-                    }`}
-                  />
-                  <span className="truncate flex-1">{deck.name}</span>
-                  <span className="ml-1 text-xs text-slate-400">
-                    {deck.cardCount}/50
-                  </span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
+
             {canCreateMore && (
               <>
-                <CommandSeparator />
                 <CommandGroup>
                   {showCreate ? (
                     <div className="flex gap-1 p-1">
@@ -129,14 +115,38 @@ export function DeckCombobox({
                       </Button>
                     </div>
                   ) : (
-                    <CommandItem onSelect={() => setShowCreate(true)}>
+                    <CommandItem onSelect={openCreateForm}>
                       <Plus className="mr-2 h-4 w-4" />
                       Create new deck
                     </CommandItem>
                   )}
                 </CommandGroup>
+                {decks.length > 0 && <CommandSeparator />}
               </>
             )}
+
+            <CommandGroup>
+              {decks.map((deck) => (
+                <CommandItem
+                  key={deck.id}
+                  value={deck.name}
+                  onSelect={() => {
+                    onSelectDeck(deck.id);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={`mr-2 h-4 w-4 ${
+                      selectedDeckId === deck.id ? "opacity-100" : "opacity-0"
+                    }`}
+                  />
+                  <span className="truncate flex-1">{deck.name}</span>
+                  <span className="ml-1 text-xs text-slate-400">
+                    {deck.cardCount}/50
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
           </CommandList>
         </Command>
       </PopoverContent>

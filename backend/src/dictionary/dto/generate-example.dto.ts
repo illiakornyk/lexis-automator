@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty } from 'class-validator';
 
 export class GenerateExampleDto {
   @ApiProperty({
-    example: 'hello',
+    example: 'ephemeral',
     description: 'The word to generate an example for',
   })
   @IsString()
@@ -11,20 +11,11 @@ export class GenerateExampleDto {
   word: string;
 
   @ApiProperty({
-    example: 'Used as a greeting when meeting someone.',
+    example: 'Lasting for a very short time.',
     description:
       'The exact definition or sense of the word to contextualize the example',
   })
   @IsString()
   @IsNotEmpty()
   definition: string;
-
-  @ApiProperty({
-    example: 'sk-...',
-    description: 'Optional OpenAI API key to use instead of the server default',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  apiKey?: string;
 }

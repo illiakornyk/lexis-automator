@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { validateEnv } from '@/config/env.validation';
+import { SupabaseModule } from '@/supabase/supabase.module';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
 import { Redis } from 'ioredis';
@@ -12,11 +14,14 @@ import { ExportJobsModule } from './export-jobs/export-jobs.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+    SupabaseModule,
     ScheduleModule.forRoot(),
     BullModule.forRootAsync({
-      useFactory: () => ({
-        connection: new Redis(process.env.REDIS_URL!, {
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        connection: new Redis(config.getOrThrow<string>('REDIS_URL'), {
           maxRetriesPerRequest: null,
           enableReadyCheck: false,
         }),

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/components/AuthProvider";
 import { AppShell } from "@/components/AppShell";
 import { ExportJobsProvider } from "@/contexts/ExportJobsContext";
@@ -16,7 +17,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const playfairDisplay = Playfair_Display({
+const playfair = Playfair_Display({
   variable: "--font-playfair",
   subsets: ["latin"],
 });
@@ -34,16 +35,18 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} h-full antialiased font-sans`}
+      className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <AuthProvider>
-          <ExportJobsProvider>
-            <AppShell />
-            {children}
-            <Toaster />
-          </ExportJobsProvider>
-        </AuthProvider>
+        <TooltipProvider delayDuration={400}>
+          <AuthProvider>
+            <ExportJobsProvider>
+              <AppShell />
+              {children}
+              <Toaster />
+            </ExportJobsProvider>
+          </AuthProvider>
+        </TooltipProvider>
       </body>
     </html>
   );
