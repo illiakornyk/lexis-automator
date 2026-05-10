@@ -100,7 +100,6 @@ export class ImagesController {
       cardId,
       req.user.sub,
       file.buffer,
-      file.mimetype,
     );
     return { imagePath };
   }

@@ -7,22 +7,19 @@ import { SupabaseService } from '@/supabase/supabase.service';
 import { firstValueFrom } from 'rxjs';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import sharp from 'sharp';
 import type { ImageSearchResult, PixabaySearchResponse } from './images.types';
 
 const MAX_IMAGE_BYTES = 1 * 1024 * 1024;
+const HD_WIDTH = 1280;
+const HD_HEIGHT = 720;
 const BUCKET = 'card-images';
 
-function extFromContentType(ct: string): string {
-  const map: Record<string, string> = {
-    'image/jpeg': 'jpg',
-    'image/jpg': 'jpg',
-    'image/png': 'png',
-    'image/webp': 'webp',
-    'image/gif': 'gif',
-    'image/avif': 'avif',
-  };
-  const base = ct.split(';')[0].trim().toLowerCase();
-  return map[base] || 'jpg';
+async function toWebp(input: Buffer): Promise<Buffer> {
+  return sharp(input)
+    .resize(HD_WIDTH, HD_HEIGHT, { fit: 'inside', withoutEnlargement: true })
+    .webp({ quality: 82 })
+    .toBuffer();
 }
 
 @Injectable()
@@ -58,14 +55,12 @@ export class ImagesService {
     url: string,
   ): Promise<string> {
     let buffer: Buffer;
-    let contentType: string;
 
     try {
       const resp = await firstValueFrom(
         this.httpService.get<ArrayBuffer>(url, { responseType: 'arraybuffer' }),
       );
       buffer = Buffer.from(resp.data);
-      contentType = (resp.headers['content-type'] as string) || 'image/jpeg';
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'unknown error';
       this.logger.warn(`Image download failed for ${url}: ${message}`);
@@ -76,33 +71,31 @@ export class ImagesService {
       throw new BadRequestException('Image exceeds 1 MB limit');
     }
 
-    return this.storeBuffer(cardId, userId, buffer, contentType);
+    return this.storeBuffer(cardId, userId, buffer);
   }
 
   async saveFromUpload(
     cardId: string,
     userId: string,
     buffer: Buffer,
-    mimeType: string,
   ): Promise<string> {
     if (buffer.length > MAX_IMAGE_BYTES) {
       throw new BadRequestException('Image exceeds 1 MB limit');
     }
-    return this.storeBuffer(cardId, userId, buffer, mimeType);
+    return this.storeBuffer(cardId, userId, buffer);
   }
 
   private async storeBuffer(
     cardId: string,
     userId: string,
     buffer: Buffer,
-    contentType: string,
   ): Promise<string> {
-    const ext = extFromContentType(contentType);
-    const storagePath = `${userId}/${cardId}.${ext}`;
+    const webpBuffer = await toWebp(buffer);
+    const storagePath = `${userId}/${cardId}.webp`;
 
     const { error } = await this.supabase.storage
       .from(BUCKET)
-      .upload(storagePath, buffer, { contentType, upsert: true });
+      .upload(storagePath, webpBuffer, { contentType: 'image/webp', upsert: true });
 
     if (error) {
       throw new BadRequestException(`Storage upload failed: ${error.message}`);
