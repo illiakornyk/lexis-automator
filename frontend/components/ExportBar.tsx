@@ -77,16 +77,17 @@ export function ExportBar() {
           {/* Zone 2 — Card Templates */}
           <div className="flex flex-col gap-2 sm:px-6 flex-1 min-w-0">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Card templates</p>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 items-start">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 items-start">
               {isLoaded ? (
                 templates.length > 0 ? (
                   templates.map((t) => (
-                    <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-600">
+                    <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-600 min-w-0">
                       <Checkbox
                         checked={selectedTemplateIds.includes(t.id)}
                         onCheckedChange={() => toggleTemplateId(t.id)}
+                        className="shrink-0"
                       />
-                      {t.name}
+                      <span className="truncate">{t.name}</span>
                     </label>
                   ))
                 ) : (
@@ -141,9 +142,9 @@ export function ExportBar() {
                   className="h-10 border-amber-300 text-amber-700 hover:bg-amber-50"
                 >
                   {isGeneratingAll ? (
-                    <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />Generating {missingExamplesCount}…</>
+                    <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />Writing examples…</>
                   ) : (
-                    <><Sparkles className="mr-1.5 h-4 w-4" />Generate {missingExamplesCount} missing</>
+                    <><Sparkles className="mr-1.5 h-4 w-4" />Fill {missingExamplesCount} missing example{missingExamplesCount !== 1 ? "s" : ""}</>
                   )}
                 </Button>
               )}

@@ -1,4 +1,13 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
+
+function toUserFriendlyError(raw: string): string {
+  if (/ECONNREFUSED/i.test(raw)) return 'Export service is unavailable. Please try again later.';
+  if (/ETIMEDOUT|ESOCKETTIMEDOUT|timeout/i.test(raw)) return 'Export timed out. The deck may be too large — try again or reduce the number of cards.';
+  if (/ENOTFOUND|getaddrinfo/i.test(raw)) return 'Could not reach the export service. Check your network configuration.';
+  if (/socket hang up/i.test(raw)) return 'Connection to export service was lost. Please try again.';
+  if (/5\d\d/.test(raw)) return 'Export service returned an error. Please try again later.';
+  return 'Export failed due to an unexpected error. Please try again.';
+}
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import * as fs from 'fs/promises';
@@ -81,12 +90,13 @@ export class ExportJobsProcessor extends WorkerHost {
         );
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      const rawMessage = err instanceof Error ? err.message : 'Unknown error';
+      const message = toUserFriendlyError(rawMessage);
       const isLastAttempt = job.attemptsMade >= (job.opts.attempts ?? 1) - 1;
       if (isLastAttempt) {
         const marked = await this.exportJobsService.markFailed(jobId, message);
         if (marked) {
-          this.logger.error(`Job ${jobId} permanently failed: ${message}`);
+          this.logger.error(`Job ${jobId} permanently failed: ${message}`, err instanceof Error ? err.stack : undefined);
         } else {
           this.logger.log(
             `Job ${jobId} failed but was already cancelled or completed; not overwriting status.`,
@@ -94,7 +104,7 @@ export class ExportJobsProcessor extends WorkerHost {
         }
       } else {
         this.logger.warn(
-          `Job ${jobId} failed (attempt ${job.attemptsMade + 1}), will retry.`,
+          `Job ${jobId} failed (attempt ${job.attemptsMade + 1}): ${message}`,
         );
       }
       throw err;

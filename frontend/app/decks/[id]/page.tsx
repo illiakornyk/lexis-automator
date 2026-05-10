@@ -192,15 +192,16 @@ export default function DeckDetailPage({
                 <LayoutTemplate size={12} />
                 Templates
               </p>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
                 {templatesLoaded ? (
                   templates.map((t) => (
-                    <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-600">
+                    <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-600 min-w-0">
                       <Checkbox
                         checked={selectedTemplateIds.includes(t.id)}
                         onCheckedChange={() => toggleTemplate(t.id)}
+                        className="shrink-0"
                       />
-                      {t.name}
+                      <span className="truncate">{t.name}</span>
                     </label>
                   ))
                 ) : (
@@ -210,34 +211,30 @@ export default function DeckDetailPage({
             </div>
 
             {/* Zone 2 — Voice */}
-            <div className="flex flex-col gap-2 sm:px-6 sm:w-[45%]">
+            <div className="flex flex-col gap-2 sm:px-6 sm:w-[30%]">
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
                 <Volume2 size={12} />
                 Voice
               </p>
-              <div className="flex items-center gap-1.5">
-                <div className="flex-1">
-                  <Select value={accent} onValueChange={setAccent}>
-                    <SelectTrigger className="w-full h-8 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="US">🇺🇸 American</SelectItem>
-                      <SelectItem value="GB">🇬🇧 British</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex-1">
-                  <Select value={gender} onValueChange={setGender}>
-                    <SelectTrigger className="w-full h-8 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="FEMALE">♀ Female</SelectItem>
-                      <SelectItem value="MALE">♂ Male</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="flex flex-col gap-2">
+                <Select value={accent} onValueChange={setAccent}>
+                  <SelectTrigger className="w-full h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="US">🇺🇸 American</SelectItem>
+                    <SelectItem value="GB">🇬🇧 British</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={gender} onValueChange={setGender}>
+                  <SelectTrigger className="w-full h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="FEMALE">♀ Female</SelectItem>
+                    <SelectItem value="MALE">♂ Male</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -251,12 +248,12 @@ export default function DeckDetailPage({
                 <Button
                   onClick={handleEnqueue}
                   disabled={isEnqueuing || cards.length === 0}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700"
+                  className="w-full h-12 text-base bg-indigo-600 hover:bg-indigo-700"
                 >
                   {isEnqueuing ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Queuing…</>
+                    <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Preparing…</>
                   ) : (
-                    <><PackagePlus className="mr-2 h-4 w-4" />Add to Queue</>
+                    <><PackagePlus className="mr-2 h-5 w-5" />Download Anki Deck</>
                   )}
                 </Button>
               </div>

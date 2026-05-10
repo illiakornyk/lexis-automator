@@ -23,6 +23,7 @@ function LexisAutomatorUI() {
     isLoading,
     selectedDefs,
     generatingExamples,
+    aiGeneratedIds,
     toggleSelection,
     handleSearch,
     handleGenerateExample,
@@ -89,7 +90,7 @@ function LexisAutomatorUI() {
             <p className="text-xs text-slate-400 -mt-6">
               Source:{" "}
               <a
-                href="https://en.wiktionary.org/wiki/Wiktionary:Main_Page"
+                href={`https://en.wiktionary.org/wiki/${encodeURIComponent(wordData.word)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline underline-offset-2 hover:text-slate-600 transition-colors"
@@ -124,6 +125,7 @@ function LexisAutomatorUI() {
                             example={def.example}
                             isSelected={selectedDefs.includes(defId)}
                             isGenerating={!!generatingExamples[defId]}
+                            isAiGenerated={aiGeneratedIds.has(defId)}
                             onToggleSelection={toggleSelection}
                             onGenerateExample={() => handleGenerateExample(defId, mIdx, dIdx, def.definition)}
                           />

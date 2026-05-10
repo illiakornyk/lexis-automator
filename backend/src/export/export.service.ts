@@ -125,6 +125,7 @@ export class ExportService {
     const pythonServiceUrl =
       this.configService.get<string>('ANKI_EXPORTER_URL') ??
       'http://127.0.0.1:8000';
+    this.logger.log(`Anki exporter URL: ${pythonServiceUrl}`);
     this.logger.log(`Requesting APKG generation for deck: ${deckName}`);
     const response = await firstValueFrom(
       this.httpService.post<AnkiSidecarResponse>(

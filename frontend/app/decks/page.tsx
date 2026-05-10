@@ -259,15 +259,16 @@ export default function DecksPage() {
                   <LayoutTemplate size={12} />
                   Templates
                 </p>
-                <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
                   {templatesLoaded ? (
                     templates.slice(0, 4).map((t) => (
-                      <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-600">
+                      <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-600 min-w-0">
                         <Checkbox
                           checked={bulkTemplateIds.includes(t.id)}
                           onCheckedChange={() => toggleBulkTemplate(t.id)}
+                          className="shrink-0"
                         />
-                        {t.name}
+                        <span className="truncate">{t.name}</span>
                       </label>
                     ))
                   ) : (
@@ -282,9 +283,9 @@ export default function DecksPage() {
                   <Volume2 size={12} />
                   Voice
                 </p>
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-col gap-2">
                   <Select value={bulkAccent} onValueChange={setBulkAccent}>
-                    <SelectTrigger className="w-[120px] h-8 text-sm">
+                    <SelectTrigger className="w-[140px] h-9 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -293,7 +294,7 @@ export default function DecksPage() {
                     </SelectContent>
                   </Select>
                   <Select value={bulkGender} onValueChange={setBulkGender}>
-                    <SelectTrigger className="w-[105px] h-8 text-sm">
+                    <SelectTrigger className="w-[140px] h-9 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -314,12 +315,12 @@ export default function DecksPage() {
                   <Button
                     onClick={handleBulkEnqueue}
                     disabled={isEnqueuing}
-                    className="h-10 bg-indigo-600 hover:bg-indigo-700"
+                    className="h-12 text-base bg-indigo-600 hover:bg-indigo-700"
                   >
                     {isEnqueuing ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Queuing…</>
+                      <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Preparing…</>
                     ) : (
-                      <><PackagePlus className="mr-2 h-4 w-4" />Export to Anki</>
+                      <><PackagePlus className="mr-2 h-5 w-5" />Download Anki Decks</>
                     )}
                   </Button>
                   <Button

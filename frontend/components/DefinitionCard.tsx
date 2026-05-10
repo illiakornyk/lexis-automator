@@ -1,10 +1,10 @@
 "use client";
 
-import React from "react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DefinitionCardProps {
   defId: string;
@@ -12,6 +12,7 @@ interface DefinitionCardProps {
   example?: string;
   isSelected: boolean;
   isGenerating: boolean;
+  isAiGenerated: boolean;
   onToggleSelection: (id: string) => void;
   onGenerateExample: () => void;
 }
@@ -22,6 +23,7 @@ export function DefinitionCard({
   example,
   isSelected,
   isGenerating,
+  isAiGenerated,
   onToggleSelection,
   onGenerateExample,
 }: DefinitionCardProps) {
@@ -51,6 +53,18 @@ export function DefinitionCard({
         {example ? (
           <div className="bg-white border rounded-md p-3 text-sm text-slate-600 mb-3 italic shadow-sm">
             &quot;{example}&quot;
+            {isAiGenerated && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="ml-2 not-italic text-[10px] font-medium text-violet-500 bg-violet-50 border border-violet-200 rounded px-1.5 py-0.5 align-middle cursor-default">
+                    ✦ AI
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  This example was generated with AI
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
         ) : (
           <div className="bg-slate-100 border border-slate-200 border-dashed rounded-md p-3 text-sm text-slate-500 mb-3">

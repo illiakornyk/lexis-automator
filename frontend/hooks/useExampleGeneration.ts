@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type React from "react";
 import { toast } from "sonner";
 import { LexisApi } from "@/lib/api";
@@ -17,7 +17,12 @@ interface Props {
 export function useExampleGeneration({ wordData, setWordData, selectedDefs }: Props) {
   const [generatingExamples, setGeneratingExamples] = useState<Record<string, boolean>>({});
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
+  const [aiGeneratedIds, setAiGeneratedIds] = useState<Set<string>>(new Set());
   const { profile } = useProfile();
+
+  useEffect(() => {
+    if (!wordData) setAiGeneratedIds(new Set());
+  }, [wordData]);
 
   const updateExample = (mIdx: number, dIdx: number, example: string) => {
     setWordData((prev) => {
@@ -38,6 +43,7 @@ export function useExampleGeneration({ wordData, setWordData, selectedDefs }: Pr
     try {
       const res = await LexisApi.generateExample(wordData!.word, definitionStr, profile.openai_api_key);
       updateExample(mIdx, dIdx, res.example);
+      setAiGeneratedIds((prev) => new Set([...prev, defId]));
       toast.success("AI Example generated successfully!");
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : "Failed to generate example.");
@@ -71,6 +77,7 @@ export function useExampleGeneration({ wordData, setWordData, selectedDefs }: Pr
       try {
         const res = await LexisApi.generateExample(wordData.word, item.definition, profile.openai_api_key);
         updateExample(item.mIdx, item.dIdx, res.example);
+        setAiGeneratedIds((prev) => new Set([...prev, item.defId]));
         successCount++;
       } catch {
         toast.error(`Failed to generate example for: "${item.definition.slice(0, 40)}..."`);
@@ -96,6 +103,7 @@ export function useExampleGeneration({ wordData, setWordData, selectedDefs }: Pr
   return {
     generatingExamples,
     isGeneratingAll,
+    aiGeneratedIds,
     missingExamplesCount,
     handleGenerateExample,
     handleGenerateAllMissing,
