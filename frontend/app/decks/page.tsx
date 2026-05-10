@@ -16,6 +16,7 @@ import { useDecks } from "@/hooks/useDecks";
 import { useTemplates } from "@/hooks/useTemplates";
 import { useAuth } from "@/components/AuthProvider";
 import { useExportJobsContext } from "@/contexts/ExportJobsContext";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export default function DecksPage() {
   const router = useRouter();
@@ -25,6 +26,9 @@ export default function DecksPage() {
   const { enqueue, isLoading: isEnqueuing } = useExportJobsContext();
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [pendingDelete, setPendingDelete] = useState<
+    { type: "single"; deckId: string; deckName: string } | { type: "bulk"; count: number } | null
+  >(null);
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "name-asc" | "name-desc">("date-desc");
   const [isCreating, setIsCreating] = useState(false);
   const [newDeckName, setNewDeckName] = useState("");
@@ -95,11 +99,17 @@ export default function DecksPage() {
     );
   };
 
-  const handleBulkDelete = async () => {
-    const ids = Array.from(selectedIds);
-    await Promise.all(ids.map((id) => deleteDeck(id)));
-    setSelectedIds(new Set());
-    toast.success(`${ids.length} deck${ids.length !== 1 ? "s" : ""} deleted.`);
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    if (pendingDelete.type === "single") {
+      await deleteDeck(pendingDelete.deckId);
+    } else {
+      const ids = Array.from(selectedIds);
+      await Promise.all(ids.map((id) => deleteDeck(id)));
+      setSelectedIds(new Set());
+      toast.success(`${ids.length} deck${ids.length !== 1 ? "s" : ""} deleted.`);
+    }
+    setPendingDelete(null);
   };
 
   const handleBulkEnqueue = async () => {
@@ -241,7 +251,7 @@ export default function DecksPage() {
                     variant="ghost"
                     size="sm"
                     className="text-slate-400 hover:text-red-500"
-                    onClick={(e) => { e.stopPropagation(); void deleteDeck(deck.id); }}
+                    onClick={(e) => { e.stopPropagation(); setPendingDelete({ type: "single", deckId: deck.id, deckName: deck.name }); }}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -340,7 +350,7 @@ export default function DecksPage() {
                     )}
                   </Button>
                   <Button
-                    onClick={handleBulkDelete}
+                    onClick={() => setPendingDelete({ type: "bulk", count: selectedIds.size })}
                     disabled={isEnqueuing}
                     variant="outline"
                     className="h-10 border-red-200 text-red-600 hover:bg-red-50"
@@ -355,6 +365,23 @@ export default function DecksPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => { if (!open) setPendingDelete(null); }}
+        title={
+          pendingDelete?.type === "single"
+            ? `Delete "${pendingDelete.deckName}"?`
+            : `Delete ${pendingDelete?.count} deck${pendingDelete?.count !== 1 ? "s" : ""}?`
+        }
+        description={
+          pendingDelete?.type === "single"
+            ? "This will permanently delete this deck and all its cards. This action cannot be undone."
+            : `This will permanently delete ${pendingDelete?.count} deck${pendingDelete?.count !== 1 ? "s" : ""} and all their cards. This action cannot be undone.`
+        }
+        confirmLabel={pendingDelete?.type === "single" ? "Delete deck" : `Delete ${pendingDelete?.count} deck${pendingDelete?.count !== 1 ? "s" : ""}`}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

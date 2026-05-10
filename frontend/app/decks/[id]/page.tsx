@@ -9,6 +9,7 @@ import {
   Loader2,
   PackagePlus,
   Pencil,
+  Sparkles,
   Trash2,
   Volume2,
   X,
@@ -27,6 +28,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { CardImagePicker } from "@/components/CardImagePicker";
 import { LexisApi } from "@/lib/api";
 import { useExportJobsContext } from "@/contexts/ExportJobsContext";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { toast } from "sonner";
 
 export default function DeckDetailPage({
@@ -38,17 +40,20 @@ export default function DeckDetailPage({
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const { decks, isLoading: decksLoading, renameDeck, deleteDeck } = useDecks();
-  const { cards, isLoading: cardsLoading, removeCard, updateCardImage } = useDeckCards(deckId);
+  const { cards, isLoading: cardsLoading, removeCard, updateCardImage, updateCardExample } = useDeckCards(deckId);
   const { templates, isLoaded: templatesLoaded } = useTemplates();
 
   const { enqueue, isLoading: isEnqueuing } = useExportJobsContext();
 
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>(["default-recognition"]);
   const [accent, setAccent] = useState("US");
   const [gender, setGender] = useState("FEMALE");
   const [pickerCardId, setPickerCardId] = useState<string | null>(null);
+  const [generatingCardIds, setGeneratingCardIds] = useState<Set<string>>(new Set());
+  const [isGeneratingAll, setIsGeneratingAll] = useState(false);
   const [imageSignedUrls, setImageSignedUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -109,6 +114,40 @@ export default function DeckDetailPage({
   const handleDelete = async () => {
     await deleteDeck(deckId);
     router.push("/decks");
+  };
+
+  const handleGenerateExample = async (cardId: string, word: string, definition: string) => {
+    setGeneratingCardIds((prev) => new Set([...prev, cardId]));
+    try {
+      const res = await LexisApi.generateExample(word, definition);
+      await updateCardExample(cardId, res.example);
+      toast.success("Example generated.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to generate example.");
+    } finally {
+      setGeneratingCardIds((prev) => { const next = new Set(prev); next.delete(cardId); return next; });
+    }
+  };
+
+  const handleGenerateAllMissing = async () => {
+    const missing = cards.filter((c) => !c.example);
+    if (missing.length === 0) return;
+    setIsGeneratingAll(true);
+    let successCount = 0;
+    for (const card of missing) {
+      setGeneratingCardIds((prev) => new Set([...prev, card.id]));
+      try {
+        const res = await LexisApi.generateExample(card.word, card.definition);
+        await updateCardExample(card.id, res.example);
+        successCount++;
+      } catch {
+        toast.error(`Failed to generate example for "${card.word}".`);
+      } finally {
+        setGeneratingCardIds((prev) => { const next = new Set(prev); next.delete(card.id); return next; });
+      }
+    }
+    setIsGeneratingAll(false);
+    if (successCount > 0) toast.success(`Generated ${successCount} example${successCount !== 1 ? "s" : ""}.`);
   };
 
   const handleEnqueue = async () => {
@@ -178,7 +217,7 @@ export default function DeckDetailPage({
             variant="ghost"
             size="icon"
             className="text-slate-400 hover:text-red-500"
-            onClick={handleDelete}
+            onClick={() => setShowDeleteConfirm(true)}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -249,7 +288,7 @@ export default function DeckDetailPage({
                 <Button
                   onClick={handleEnqueue}
                   disabled={isEnqueuing || cards.length === 0}
-                  className="w-full h-12 text-base bg-indigo-600 hover:bg-indigo-700"
+                  className="w-full h-12 text-sm bg-indigo-600 hover:bg-indigo-700"
                 >
                   {isEnqueuing ? (
                     <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Preparing…</>
@@ -262,6 +301,26 @@ export default function DeckDetailPage({
 
           </div>
         </div>
+
+        {!cardsLoading && cards.filter((c) => !c.example).length > 0 && (
+          <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+            <span className="text-sm text-amber-700">
+              {cards.filter((c) => !c.example).length} card{cards.filter((c) => !c.example).length !== 1 ? "s are" : " is"} missing an example sentence
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGenerateAllMissing}
+              disabled={isGeneratingAll}
+              className="border-amber-300 text-amber-700 hover:bg-amber-100 shrink-0 ml-4"
+            >
+              {isGeneratingAll
+                ? <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />Generating…</>
+                : <><Sparkles className="mr-1.5 h-4 w-4" />Generate all</>
+              }
+            </Button>
+          </div>
+        )}
 
         {cardsLoading ? (
           <div className="flex justify-center py-12">
@@ -311,8 +370,23 @@ export default function DeckDetailPage({
                     <td className="px-4 py-3 text-slate-700 max-w-xs">
                       <span className="line-clamp-2">{card.definition}</span>
                     </td>
-                    <td className="px-4 py-3 text-slate-500 italic hidden md:table-cell max-w-xs">
-                      <span className="line-clamp-2">{card.example || "—"}</span>
+                    <td className="px-4 py-3 hidden md:table-cell max-w-xs">
+                      {card.example ? (
+                        <span className="line-clamp-2 text-slate-500 italic">{card.example}</span>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                          disabled={generatingCardIds.has(card.id)}
+                          onClick={() => handleGenerateExample(card.id, card.word, card.definition)}
+                        >
+                          {generatingCardIds.has(card.id)
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <><Sparkles className="h-3.5 w-3.5 mr-1" />Generate</>
+                          }
+                        </Button>
+                      )}
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell">
                       <button
@@ -351,6 +425,15 @@ export default function DeckDetailPage({
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title={`Delete "${deck.name}"?`}
+        description="This will permanently delete the deck and all its cards. This action cannot be undone."
+        confirmLabel="Delete deck"
+        onConfirm={handleDelete}
+      />
 
       {pickerCardId && (
         <CardImagePicker

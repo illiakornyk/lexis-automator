@@ -6,6 +6,7 @@ import { ExportIcon } from "@/components/icons/ExportIcon";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DeckCombobox } from "@/components/DeckCombobox";
 import { useLexisAutomatorContext } from "@/contexts/LexisAutomatorContext";
 
@@ -13,6 +14,7 @@ const CSS_VAR = "--export-bar-height";
 
 export function ExportBar() {
   const {
+    searchQuery,
     selectedDefs,
     missingExamplesCount,
     accent,
@@ -78,18 +80,29 @@ export function ExportBar() {
                 decks={decks}
                 selectedDeckId={selectedDeckId}
                 onSelectDeck={setSelectedDeckId}
-                onCreateDeck={async (name) => { await createDeck(name); }}
+                onCreateDeck={async (name) => {
+                  const newDeck = await createDeck(name);
+                  if (newDeck) setSelectedDeckId(newDeck.id);
+                }}
                 isLoading={decksLoading}
+                defaultNewDeckName={searchQuery}
               />
-              <Button
-                onClick={handleSaveToDeck}
-                disabled={isSaving || !selectedDeckId}
-                size="sm"
-                variant="outline"
-                className="shrink-0 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-              >
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookmarkPlus className="h-4 w-4" />}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleSaveToDeck}
+                      disabled={isSaving || !selectedDeckId}
+                      size="sm"
+                      variant="outline"
+                      className="shrink-0 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                    >
+                      {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookmarkPlus className="h-4 w-4" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Save selected cards to deck</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
 

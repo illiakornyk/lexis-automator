@@ -22,7 +22,7 @@ export function useDecks() {
       const { data, error } = await supabase
         .from('decks')
         .select('*, saved_cards(count)')
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false });
       if (error) throw error;
       type DeckRow = { id: string; name: string; created_at: string; saved_cards: { count: number }[] };
       setDecks(
@@ -62,7 +62,7 @@ export function useDecks() {
         .single();
       if (error) throw error;
       const newDeck: Deck = { id: data.id, name: data.name, cardCount: 0, createdAt: data.created_at };
-      setDecks((prev) => [...prev, newDeck]);
+      setDecks((prev) => [newDeck, ...prev]);
       return newDeck;
     } catch (err: any) {
       toast.error(err.message || 'Failed to create deck.');
