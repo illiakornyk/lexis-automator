@@ -4,7 +4,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Save, Loader2, Volume2, Key, Globe, User, X } from 'lucide-react';
+import { Save, Loader2, Volume2, Key, Globe, User, X, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,16 +19,27 @@ const LLM_PROVIDERS = [
 
 export default function SettingsPage() {
   const { user, isLoading: authLoading } = useAuth();
-  const { profile, isLoading: profileLoading, updateProfile, saveAiKey, deleteAiKey } = useProfile();
+  const {
+    profile,
+    isLoading: profileLoading,
+    updateProfile,
+    saveAiKey,
+    deleteAiKey,
+    saveGoogleTtsKey,
+    deleteGoogleTtsKey,
+  } = useProfile();
   const router = useRouter();
 
   const [accent, setAccent] = useState('US');
   const [gender, setGender] = useState('FEMALE');
   const [apiKey, setApiKey] = useState('');
   const [apiProvider, setApiProvider] = useState('openai');
+  const [googleTtsKey, setGoogleTtsKey] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingKey, setIsSavingKey] = useState(false);
   const [isDeletingKey, setIsDeletingKey] = useState(false);
+  const [isSavingTtsKey, setIsSavingTtsKey] = useState(false);
+  const [isDeletingTtsKey, setIsDeletingTtsKey] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/login');
@@ -62,6 +73,20 @@ export default function SettingsPage() {
     await deleteAiKey();
     setApiProvider('openai');
     setIsDeletingKey(false);
+  };
+
+  const handleSaveTtsKey = async () => {
+    if (!googleTtsKey.trim()) return;
+    setIsSavingTtsKey(true);
+    await saveGoogleTtsKey(googleTtsKey.trim());
+    setGoogleTtsKey('');
+    setIsSavingTtsKey(false);
+  };
+
+  const handleDeleteTtsKey = async () => {
+    setIsDeletingTtsKey(true);
+    await deleteGoogleTtsKey();
+    setIsDeletingTtsKey(false);
   };
 
   if (authLoading || profileLoading || !user) {
@@ -206,6 +231,69 @@ export default function SettingsPage() {
               >
                 {isSavingKey ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Key className="mr-2 h-4 w-4" />}
                 Save API key
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Google TTS API Key */}
+        <div className="bg-white border rounded-xl p-6 space-y-5">
+          <div className="flex items-center gap-2 pb-3 border-b">
+            <Mic className="h-4 w-4 text-indigo-600" />
+            <h2 className="font-semibold text-slate-800">Google TTS API key</h2>
+            <span className="ml-auto text-xs text-slate-400 font-normal">Optional</span>
+          </div>
+
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>API key</Label>
+              {profile.has_google_tts_key && !googleTtsKey ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value="••••••••••••••••••••••••"
+                    readOnly
+                    className="flex-1 text-slate-400 font-mono"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0 border-red-200 text-red-500 hover:bg-red-50"
+                    onClick={handleDeleteTtsKey}
+                    disabled={isDeletingTtsKey}
+                    title="Remove key"
+                  >
+                    {isDeletingTtsKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                  </Button>
+                </div>
+              ) : (
+                <Input
+                  type="password"
+                  placeholder="Paste your Google Cloud API key…"
+                  value={googleTtsKey}
+                  onChange={(e) => setGoogleTtsKey(e.target.value)}
+                  autoComplete="off"
+                />
+              )}
+            </div>
+
+            <p className="text-xs text-slate-400">
+              When provided, your key is used for audio generation during Anki export instead of the shared server credentials.
+              Stored encrypted in Supabase Vault — never readable after saving.
+            </p>
+            <p className="text-xs text-slate-400">
+              Requires a Google Cloud API key with the <span className="text-slate-500 font-medium">Cloud Text-to-Speech API</span> enabled.
+            </p>
+
+            {googleTtsKey && (
+              <Button
+                type="button"
+                onClick={handleSaveTtsKey}
+                disabled={isSavingTtsKey}
+                className="w-full bg-indigo-600 hover:bg-indigo-700"
+              >
+                {isSavingTtsKey ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mic className="mr-2 h-4 w-4" />}
+                Save TTS key
               </Button>
             )}
           </div>

@@ -107,6 +107,7 @@ export type Database = {
           created_at: string;
           default_tts_accent: string;
           default_tts_gender: string;
+          google_tts_key_id: string | null;
           id: string;
           updated_at: string;
         };
@@ -116,6 +117,7 @@ export type Database = {
           created_at?: string;
           default_tts_accent?: string;
           default_tts_gender?: string;
+          google_tts_key_id?: string | null;
           id: string;
           updated_at?: string;
         };
@@ -125,6 +127,7 @@ export type Database = {
           created_at?: string;
           default_tts_accent?: string;
           default_tts_gender?: string;
+          google_tts_key_id?: string | null;
           id?: string;
           updated_at?: string;
         };
@@ -217,6 +220,14 @@ export type Database = {
         Returns: undefined;
       };
       delete_ai_key: {
+        Args: Record<never, never>;
+        Returns: undefined;
+      };
+      upsert_google_tts_key: {
+        Args: { key_value: string };
+        Returns: undefined;
+      };
+      delete_google_tts_key: {
         Args: Record<never, never>;
         Returns: undefined;
       };

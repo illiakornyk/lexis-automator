@@ -9,6 +9,7 @@ export interface UserProfile {
   default_tts_gender: string;
   has_ai_key: boolean;
   ai_provider: string | null;
+  has_google_tts_key: boolean;
 }
 
 export interface UpdateProfilePayload {
@@ -22,6 +23,7 @@ const DEFAULT_PROFILE: UserProfile = {
   default_tts_gender: 'FEMALE',
   has_ai_key: false,
   ai_provider: null,
+  has_google_tts_key: false,
 };
 
 export function useProfile() {
@@ -43,7 +45,7 @@ export function useProfile() {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, default_tts_accent, default_tts_gender, ai_key_id, ai_provider')
+          .select('id, default_tts_accent, default_tts_gender, ai_key_id, ai_provider, google_tts_key_id')
           .eq('id', user.id)
           .single();
 
@@ -59,6 +61,7 @@ export function useProfile() {
             default_tts_gender: data.default_tts_gender,
             has_ai_key: data.ai_key_id !== null,
             ai_provider: data.ai_provider,
+            has_google_tts_key: data.google_tts_key_id !== null,
           });
         }
       } catch (err) {
@@ -123,11 +126,43 @@ export function useProfile() {
     }
   };
 
+  const saveGoogleTtsKey = async (keyValue: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase.rpc('upsert_google_tts_key', {
+        key_value: keyValue,
+      });
+      if (error) throw error;
+      setProfile(prev => ({ ...prev, has_google_tts_key: true }));
+      toast.success('Google TTS key saved securely.');
+    } catch (err) {
+      console.error('Failed to save Google TTS key:', err);
+      toast.error('Failed to save Google TTS key.');
+    }
+  };
+
+  const deleteGoogleTtsKey = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase.rpc('delete_google_tts_key');
+      if (error) throw error;
+      setProfile(prev => ({ ...prev, has_google_tts_key: false }));
+      toast.success('Google TTS key removed.');
+    } catch (err) {
+      console.error('Failed to delete Google TTS key:', err);
+      toast.error('Failed to remove Google TTS key.');
+    }
+  };
+
   return {
     profile,
     isLoading,
     updateProfile,
     saveAiKey,
     deleteAiKey,
+    saveGoogleTtsKey,
+    deleteGoogleTtsKey,
   };
 }

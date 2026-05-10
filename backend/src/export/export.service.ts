@@ -70,6 +70,7 @@ export class ExportService {
     ttsSettings: TtsSettingsDto,
     templates: CompiledTemplate[],
     tempDir: string,
+    userTtsKey?: string,
   ): Promise<string> {
     const pythonPayload: AnkiPayload = {
       deck_name: deckName,
@@ -90,6 +91,7 @@ export class ExportService {
           ttsText,
           ttsSettings.accent,
           ttsSettings.gender,
+          userTtsKey,
         );
         const filename = `${card.word}_${i}.webm`.replace(/[^a-z0-9_.]/gi, '_');
         audioPath = path.join(tempDir, filename);
@@ -164,6 +166,7 @@ export class ExportService {
       templateIds,
       this.supabase,
     );
+    const userTtsKey = await this.ttsService.getUserTtsKey(userId);
 
     const { dir: tempDir, cleanup } = await createTempDir();
 
@@ -173,6 +176,7 @@ export class ExportService {
       ttsSettings,
       templates,
       tempDir,
+      userTtsKey ?? undefined,
     );
     return { apkgPath, deckName: deck.name, cleanup };
   }
