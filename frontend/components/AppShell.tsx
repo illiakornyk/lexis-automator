@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Library, LayoutTemplate, LogOut, Settings, ArrowUp } from "lucide-react";
+import { Library, LayoutTemplate, LogOut, Settings, ArrowUp, BookOpen } from "lucide-react";
 import { DictionaryIcon } from "@/components/icons/DictionaryIcon";
 import { ExportQueuePanel } from "@/components/ExportQueuePanel";
 import { useState, useRef, useEffect } from "react";
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const NAV_LINKS = [
+  { href: "/", label: "Dictionary", Icon: BookOpen },
   { href: "/decks", label: "Decks", Icon: Library },
   { href: "/templates", label: "Templates", Icon: LayoutTemplate },
 ];
@@ -27,7 +28,7 @@ function NavLink({
   Icon: React.ElementType;
   pathname: string;
 }) {
-  const isActive = pathname === href || pathname.startsWith(href + "/");
+  const isActive = href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
   return (
     <Link
       href={href}

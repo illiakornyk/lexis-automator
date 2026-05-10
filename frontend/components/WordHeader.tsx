@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Phonetic } from "@/lib/types/dictionary";
 
@@ -47,11 +48,12 @@ export function WordHeader({ word, phonetics }: WordHeaderProps) {
           <Button
             variant="outline"
             size="sm"
-            className="h-7 text-xs rounded-full px-3"
+            className="h-7 text-xs rounded-full px-3 gap-1.5"
             disabled={playingUrl === firstAudio.audio}
             onClick={() => playAudio(firstAudio.audio!)}
           >
-            ▶ Play
+            <Volume2 className={`h-3.5 w-3.5 ${playingUrl === firstAudio.audio ? "animate-pulse text-indigo-600" : ""}`} />
+            Play
           </Button>
         </div>
       ) : fallbackText ? (
@@ -69,10 +71,11 @@ export function WordHeader({ word, phonetics }: WordHeaderProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs rounded-full px-3 gap-1"
+                className="h-7 text-xs rounded-full px-3 gap-1.5"
                 disabled={playingUrl === ukPhonetic.audio}
                 onClick={() => playAudio(ukPhonetic.audio!)}
               >
+                <Volume2 className={`h-3.5 w-3.5 ${playingUrl === ukPhonetic.audio ? "animate-pulse text-indigo-600" : ""}`} />
                 🇬🇧
               </Button>
             )}
@@ -80,10 +83,11 @@ export function WordHeader({ word, phonetics }: WordHeaderProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs rounded-full px-3 gap-1"
+                className="h-7 text-xs rounded-full px-3 gap-1.5"
                 disabled={playingUrl === usPhonetic.audio}
                 onClick={() => playAudio(usPhonetic.audio!)}
               >
+                <Volume2 className={`h-3.5 w-3.5 ${playingUrl === usPhonetic.audio ? "animate-pulse text-indigo-600" : ""}`} />
                 🇺🇸
               </Button>
             )}
@@ -101,10 +105,11 @@ export function WordHeader({ word, phonetics }: WordHeaderProps) {
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-xs rounded-full px-3 gap-1"
+              className="h-7 text-xs rounded-full px-3 gap-1.5"
               disabled={playingUrl === ukPhonetic.audio}
               onClick={() => playAudio(ukPhonetic.audio!)}
             >
+              <Volume2 className={`h-3.5 w-3.5 ${playingUrl === ukPhonetic.audio ? "animate-pulse text-indigo-600" : ""}`} />
               🇬🇧
             </Button>
           </div>
@@ -115,10 +120,11 @@ export function WordHeader({ word, phonetics }: WordHeaderProps) {
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-xs rounded-full px-3 gap-1"
+              className="h-7 text-xs rounded-full px-3 gap-1.5"
               disabled={playingUrl === usPhonetic.audio}
               onClick={() => playAudio(usPhonetic.audio!)}
             >
+              <Volume2 className={`h-3.5 w-3.5 ${playingUrl === usPhonetic.audio ? "animate-pulse text-indigo-600" : ""}`} />
               🇺🇸
             </Button>
           </div>
