@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 
+import uvicorn
 from fastapi import FastAPI, HTTPException
 from schemas import DeckRequest, GenerateResponse
 from anki_utils import create_anki_package
@@ -24,3 +25,7 @@ async def generate_deck(req: DeckRequest) -> GenerateResponse:
     except Exception as e:
         logger.exception("Failed to generate Anki package for deck %s", req.deck_uuid)
         raise HTTPException(status_code=500, detail="Failed to generate Anki package") from e
+
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

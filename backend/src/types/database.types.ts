@@ -102,27 +102,30 @@ export type Database = {
       };
       profiles: {
         Row: {
+          ai_key_id: string | null;
+          ai_provider: string | null;
           created_at: string;
           default_tts_accent: string;
           default_tts_gender: string;
           id: string;
-          openai_api_key: string | null;
           updated_at: string;
         };
         Insert: {
+          ai_key_id?: string | null;
+          ai_provider?: string | null;
           created_at?: string;
           default_tts_accent?: string;
           default_tts_gender?: string;
           id: string;
-          openai_api_key?: string | null;
           updated_at?: string;
         };
         Update: {
+          ai_key_id?: string | null;
+          ai_provider?: string | null;
           created_at?: string;
           default_tts_accent?: string;
           default_tts_gender?: string;
           id?: string;
-          openai_api_key?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -209,7 +212,18 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      get_user_ai_key: {
+        Args: { p_user_id: string };
+        Returns: string | null;
+      };
+      upsert_ai_key: {
+        Args: { key_value: string; key_provider?: string };
+        Returns: undefined;
+      };
+      delete_ai_key: {
+        Args: Record<never, never>;
+        Returns: undefined;
+      };
     };
     Enums: {
       [_ in never]: never;

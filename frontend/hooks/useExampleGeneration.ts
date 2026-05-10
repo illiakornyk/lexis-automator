@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { LexisApi } from "@/lib/api";
 import type { DictionaryEntry } from "@/lib/types/dictionary";
 import { parseDefId } from "@/lib/utils/dictionary";
-import { useProfile } from "./useProfile";
 
 interface Props {
   wordData: DictionaryEntry | null;
@@ -18,7 +17,6 @@ export function useExampleGeneration({ wordData, setWordData, selectedDefs }: Pr
   const [generatingExamples, setGeneratingExamples] = useState<Record<string, boolean>>({});
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
   const [aiGeneratedIds, setAiGeneratedIds] = useState<Set<string>>(new Set());
-  const { profile } = useProfile();
 
   useEffect(() => {
     if (!wordData) setAiGeneratedIds(new Set());
@@ -41,7 +39,7 @@ export function useExampleGeneration({ wordData, setWordData, selectedDefs }: Pr
   ) => {
     setGeneratingExamples((prev) => ({ ...prev, [defId]: true }));
     try {
-      const res = await LexisApi.generateExample(wordData!.word, definitionStr, profile.openai_api_key);
+      const res = await LexisApi.generateExample(wordData!.word, definitionStr);
       updateExample(mIdx, dIdx, res.example);
       setAiGeneratedIds((prev) => new Set([...prev, defId]));
       toast.success("AI Example generated successfully!");
@@ -75,7 +73,7 @@ export function useExampleGeneration({ wordData, setWordData, selectedDefs }: Pr
     for (const item of missing) {
       setGeneratingExamples((prev) => ({ ...prev, [item.defId]: true }));
       try {
-        const res = await LexisApi.generateExample(wordData.word, item.definition, profile.openai_api_key);
+        const res = await LexisApi.generateExample(wordData.word, item.definition);
         updateExample(item.mIdx, item.dIdx, res.example);
         setAiGeneratedIds((prev) => new Set([...prev, item.defId]));
         successCount++;

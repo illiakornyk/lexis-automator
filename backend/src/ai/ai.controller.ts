@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, HttpStatus, UseGuards, Req } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -6,6 +6,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import type { Request } from 'express';
 import { AiService } from './ai.service';
 import { GenerateExampleDto } from '@/dictionary/dto/generate-example.dto';
 import { SupabaseAuthGuard } from '@/guards/supabase-auth.guard';
@@ -29,12 +30,14 @@ export class AiController {
     status: HttpStatus.INTERNAL_SERVER_ERROR,
     description: 'Failed to generate example.',
   })
-  async generateExample(@Body() dto: GenerateExampleDto) {
+  async generateExample(
+    @Body() dto: GenerateExampleDto,
+    @Req() req: Request & { user: { sub: string } },
+  ) {
     const sentence = await this.aiService.generateExample(
       dto.word,
       dto.definition,
-      dto.apiKey,
-      dto.provider,
+      req.user.sub,
     );
     return { example: sentence };
   }

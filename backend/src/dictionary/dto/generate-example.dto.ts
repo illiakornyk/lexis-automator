@@ -1,6 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
-import { LlmProvider } from '@/ai/ai.types';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsNotEmpty } from 'class-validator';
 
 export class GenerateExampleDto {
   @ApiProperty({
@@ -19,22 +18,4 @@ export class GenerateExampleDto {
   @IsString()
   @IsNotEmpty()
   definition: string;
-
-  @ApiPropertyOptional({
-    example: 'sk-...',
-    description: 'Your own API key — uses the server default when omitted',
-  })
-  @IsOptional()
-  @IsString()
-  apiKey?: string;
-
-  @ApiPropertyOptional({
-    enum: LlmProvider,
-    example: LlmProvider.OPENAI,
-    description:
-      'Provider for the supplied apiKey. Defaults to openai when apiKey is set.',
-  })
-  @IsOptional()
-  @IsEnum(LlmProvider)
-  provider?: LlmProvider;
 }
