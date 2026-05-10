@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CheckCircle2, Library, LayoutTemplate, LogOut, Settings, ArrowUp } from "lucide-react";
+import { Library, LayoutTemplate, LogOut, Settings, ArrowUp } from "lucide-react";
+import { DictionaryIcon } from "@/components/icons/DictionaryIcon";
 import { ExportQueuePanel } from "@/components/ExportQueuePanel";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
@@ -142,7 +143,7 @@ export function AppShell() {
           className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0"
         >
           <div className="bg-indigo-600 rounded-md p-1.5 flex items-center justify-center">
-            <CheckCircle2 color="white" size={18} />
+            <DictionaryIcon className="h-[18px] w-[18px] text-white" strokeWidth={1} />
           </div>
           <span className="text-lg font-bold tracking-tight text-indigo-900 hidden sm:block">
             Lexis Automator

@@ -1,11 +1,15 @@
 "use client";
 
-import { Download, Globe, Loader2, Sparkles, BookmarkPlus, User } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { Globe, Loader2, Sparkles, BookmarkPlus, User } from "lucide-react";
+import { ExportIcon } from "@/components/icons/ExportIcon";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DeckCombobox } from "@/components/DeckCombobox";
 import { useLexisAutomatorContext } from "@/contexts/LexisAutomatorContext";
+
+const CSS_VAR = "--export-bar-height";
 
 export function ExportBar() {
   const {
@@ -33,11 +37,26 @@ export function ExportBar() {
   } = useLexisAutomatorContext();
 
   const selectedCount = selectedDefs.length;
+  const barRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      document.documentElement.style.setProperty(CSS_VAR, el.offsetHeight + "px");
+    });
+    ro.observe(el);
+    document.documentElement.style.setProperty(CSS_VAR, el.offsetHeight + "px");
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.removeProperty(CSS_VAR);
+    };
+  }, [selectedCount > 0]);
 
   if (selectedCount === 0) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-[0_-4px_24px_-8px_rgba(0,0,0,0.12)]">
+    <div ref={barRef} className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-[0_-4px_24px_-8px_rgba(0,0,0,0.12)]">
       <div className="max-w-4xl mx-auto px-6 py-4">
 
         <div className="flex items-center gap-2 mb-4">
@@ -156,7 +175,7 @@ export function ExportBar() {
                 {isExporting ? (
                   <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />Queuing…</>
                 ) : (
-                  <><Download className="mr-1.5 h-4 w-4" />Export to Anki</>
+                  <><ExportIcon className="mr-1.5 h-4 w-4" />Export to Anki</>
                 )}
               </Button>
             </div>

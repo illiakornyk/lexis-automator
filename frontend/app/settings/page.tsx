@@ -4,7 +4,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Save, Loader2, Volume2, Key } from 'lucide-react';
+import { Save, Loader2, Volume2, Key, Globe, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -71,27 +71,33 @@ export default function SettingsPage() {
 
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Accent</Label>
+                <Label className="flex items-center gap-1.5">
+                  <Globe className="h-3.5 w-3.5 text-slate-400" />
+                  Accent
+                </Label>
                 <Select value={accent} onValueChange={setAccent}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="US">American English (US)</SelectItem>
-                    <SelectItem value="GB">British English (GB)</SelectItem>
+                    <SelectItem value="US">🇺🇸 American English</SelectItem>
+                    <SelectItem value="GB">🇬🇧 British English</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
-                <Label>Gender</Label>
+                <Label className="flex items-center gap-1.5">
+                  <User className="h-3.5 w-3.5 text-slate-400" />
+                  Gender
+                </Label>
                 <Select value={gender} onValueChange={setGender}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="FEMALE">Female</SelectItem>
-                    <SelectItem value="MALE">Male</SelectItem>
+                    <SelectItem value="FEMALE">♀ Female</SelectItem>
+                    <SelectItem value="MALE">♂ Male</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -102,14 +108,14 @@ export default function SettingsPage() {
           <div className="bg-white border rounded-xl p-6 space-y-5">
             <div className="flex items-center gap-2 pb-3 border-b">
               <Key className="h-4 w-4 text-indigo-600" />
-              <h2 className="font-semibold text-slate-800">OpenAI API key</h2>
+              <h2 className="font-semibold text-slate-800">AI API key</h2>
               <span className="ml-auto text-xs text-slate-400 font-normal">Optional</span>
             </div>
 
             <div className="space-y-1.5">
               <Input
                 type="password"
-                placeholder="sk-..."
+                placeholder="API key..."
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
               />
@@ -117,13 +123,16 @@ export default function SettingsPage() {
                 When provided, your key is used for example sentence generation instead of the shared server key.
                 Stored encrypted and isolated by Row Level Security.
               </p>
+              <p className="text-xs text-slate-400">
+                Supported providers: <span className="text-slate-500 font-medium">OpenAI</span>, <span className="text-slate-500 font-medium">Anthropic</span>, <span className="text-slate-500 font-medium">Google Gemini</span>, <span className="text-slate-500 font-medium">OpenRouter</span>.
+              </p>
             </div>
           </div>
 
           <Button
             type="submit"
             disabled={isSaving}
-            className="w-full bg-indigo-600 hover:bg-indigo-700"
+            className="w-full h-12 text-base bg-indigo-600 hover:bg-indigo-700"
           >
             {isSaving ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

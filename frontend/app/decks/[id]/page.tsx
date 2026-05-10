@@ -14,6 +14,7 @@ import {
   X,
   Check,
 } from "lucide-react";
+import { ExportIcon } from "@/components/icons/ExportIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -253,7 +254,7 @@ export default function DeckDetailPage({
                   {isEnqueuing ? (
                     <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Preparing…</>
                   ) : (
-                    <><PackagePlus className="mr-2 h-5 w-5" />Download Anki Deck</>
+                    <><ExportIcon className="mr-2 h-5 w-5" />Download Anki Deck</>
                   )}
                 </Button>
               </div>

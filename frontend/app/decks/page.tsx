@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Library, PackagePlus, Trash2, Loader2, Plus, Check, X, LayoutTemplate, Volume2, XCircle } from "lucide-react";
+import { ExportIcon } from "@/components/icons/ExportIcon";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -31,6 +32,21 @@ export default function DecksPage() {
   const [bulkTemplateIds, setBulkTemplateIds] = useState<string[]>(["default-recognition"]);
   const [bulkAccent, setBulkAccent] = useState("US");
   const [bulkGender, setBulkGender] = useState("FEMALE");
+  const bulkBarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = bulkBarRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      document.documentElement.style.setProperty("--export-bar-height", el.offsetHeight + "px");
+    });
+    ro.observe(el);
+    document.documentElement.style.setProperty("--export-bar-height", el.offsetHeight + "px");
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.removeProperty("--export-bar-height");
+    };
+  }, [selectedIds.size > 0]);
 
   const sortedDecks = useMemo(() => {
     return [...decks].sort((a, b) => {
@@ -237,7 +253,7 @@ export default function DecksPage() {
       </div>
 
       {selectedIds.size >= 1 && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-[0_-4px_24px_-8px_rgba(0,0,0,0.12)]">
+        <div ref={bulkBarRef} className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-[0_-4px_24px_-8px_rgba(0,0,0,0.12)]">
           <div className="max-w-4xl mx-auto px-6 py-4">
 
             {/* Status row */}
@@ -320,7 +336,7 @@ export default function DecksPage() {
                     {isEnqueuing ? (
                       <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Preparing…</>
                     ) : (
-                      <><PackagePlus className="mr-2 h-5 w-5" />Download Anki Decks</>
+                      <><ExportIcon className="mr-2 h-5 w-5" />Download Anki Decks</>
                     )}
                   </Button>
                   <Button
