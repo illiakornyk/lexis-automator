@@ -13,18 +13,14 @@ type FieldType =
   | 'Cloze';
 
 const FIELD_SNIPPETS: Record<FieldType, string> = {
-  Word: '<div style="text-align:center; font-size: 24px; font-weight: bold;">{{Word}}</div>',
-  PartOfSpeech:
-    '<span style="color: gray; padding-right: 8px;">{{PartOfSpeech}}</span>',
-  Phonetic: '<span style="color: gray;">{{Phonetic}}</span>',
-  Definition:
-    '<div style="text-align:left; font-size: 18px; margin-top: 12px; margin-bottom: 12px;"><b>Definition:</b> {{Definition}}</div>',
-  Example:
-    '<div style="text-align:left; font-style: italic; color: #555; margin-top: 12px; margin-bottom: 12px;">"{{Example}}"</div>',
-  Audio: '<div style="margin-top: 16px;">{{Audio}}</div>',
-  Image:
-    '<div style="margin-top: 12px; text-align: center;">{{#Image}}{{Image}}{{/Image}}</div>',
-  TypeIn: '<div style="margin-top: 16px;">{{type:Word}}</div>',
+  Word: '<div class="word">{{Word}}</div>',
+  PartOfSpeech: '<span class="part-of-speech">{{PartOfSpeech}}</span>',
+  Phonetic: '<span class="phonetic">{{Phonetic}}</span>',
+  Definition: '<div class="definition">{{Definition}}</div>',
+  Example: '{{#Example}}<div class=”example”>”{{Example}}”</div>{{/Example}}',
+  Audio: '<div class="card-audio">{{Audio}}</div>',
+  Image: '<div class="card-image-container">{{#Image}}{{Image}}{{/Image}}</div>',
+  TypeIn: '<div class="card-type-in">{{type:Word}}</div>',
   Cloze: '{{cloze:Text}}',
 };
 
@@ -90,7 +86,7 @@ function compileRaw(raw: TemplateRaw): CompiledTemplate {
       name: raw.name,
       is_cloze: true,
       qfmt: '{{cloze:Text}}',
-      afmt: '{{cloze:Text}}<br><br><div style="text-align:left;">{{Extra}}</div><div style="margin-top:16px;">{{Audio}}</div>',
+      afmt: '{{cloze:Text}}<hr class="card-hr"><div class="definition">{{Extra}}</div><div class="card-audio">{{Audio}}</div>',
     };
   }
   return {

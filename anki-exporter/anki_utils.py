@@ -53,7 +53,15 @@ def _extract_fields_from_template(qfmt: str, afmt: str) -> list[str]:
             seen.add(name)
             fields.append(name)
 
-    return fields or list(FIELD_VALUE_MAP.keys())
+    fields = fields or list(FIELD_VALUE_MAP.keys())
+
+    # Anki uses the first field for duplicate detection. Putting Definition
+    # first means cards for the same word with different definitions are never
+    # flagged as duplicates, since each definition is unique.
+    if 'Definition' in fields:
+        fields = ['Definition'] + [f for f in fields if f != 'Definition']
+
+    return fields
 
 
 def _build_base_model(template: CustomTemplateSchema, model_id: int) -> tuple[genanki.Model, list[str]]:
