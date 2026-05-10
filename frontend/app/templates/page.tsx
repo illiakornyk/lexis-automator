@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
 import {
   DndContext,
@@ -48,6 +49,8 @@ interface CanvasItem {
 }
 
 export default function TemplatesPage() {
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const { templates, isLoaded, addTemplate, updateTemplate, deleteTemplate } = useTemplates();
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
 
@@ -69,7 +72,7 @@ export default function TemplatesPage() {
   // Load template into local state
   useEffect(() => {
     if (!isLoaded) return;
-    
+
     if (activeTemplateId) {
       const t = templates.find((t) => t.id === activeTemplateId);
       if (t) {
@@ -82,6 +85,12 @@ export default function TemplatesPage() {
       handleNewTemplate();
     }
   }, [activeTemplateId, isLoaded]);
+
+  if (authLoading) return null;
+  if (!user) {
+    router.push("/login");
+    return null;
+  }
 
   const handleNewTemplate = () => {
     setActiveTemplateId(null);

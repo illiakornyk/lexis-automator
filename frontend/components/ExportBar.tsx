@@ -62,10 +62,10 @@ export function ExportBar() {
       <div className="max-w-4xl mx-auto px-6 py-4">
 
         <div className="flex items-center gap-2 mb-4">
-          <span className="bg-indigo-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+          <span className="bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
             {selectedCount}
           </span>
-          <span className="text-sm font-medium text-slate-700">
+          <span className="text-sm font-medium text-stone-700">
             definition{selectedCount !== 1 ? "s" : ""} selected
           </span>
         </div>
@@ -179,6 +179,18 @@ export function ExportBar() {
                     <><Sparkles className="mr-1.5 h-4 w-4" />Fill {missingExamplesCount} missing example{missingExamplesCount !== 1 ? "s" : ""}</>
                   )}
                 </Button>
+              </div>
+            )}
+            <Button
+              onClick={onDownload}
+              disabled={isExporting || isGeneratingAll || selectedTemplateIds.length === 0 || !selectedDeckId}
+              className="w-full h-11 bg-amber-500 hover:bg-amber-400 text-white font-medium"
+              title={!selectedDeckId ? "Select a deck first" : undefined}
+            >
+              {isExporting ? (
+                <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />Exporting…</>
+              ) : (
+                <><ListPlus className="mr-1.5 h-4 w-4" />Export to Anki</>
               )}
               <Button
                 onClick={handleDownload}

@@ -29,7 +29,11 @@ export function DefinitionCard({
 }: DefinitionCardProps) {
   return (
     <Card
-      className={`transition-all duration-200 cursor-pointer ${isSelected ? "border-indigo-500 ring-1 ring-indigo-500 bg-indigo-50/50" : "hover:border-slate-300"}`}
+      className={`transition-all duration-200 cursor-pointer ${
+        isSelected
+          ? "border-amber-500 ring-1 ring-amber-500 bg-amber-50"
+          : "bg-white border-stone-200 hover:border-stone-400"
+      }`}
       onClick={() => onToggleSelection(defId)}
     >
       <CardHeader className="py-4">
@@ -42,7 +46,7 @@ export function DefinitionCard({
             onClick={(e) => e.stopPropagation()}
           />
           <div className="grid gap-1.5 flex-1">
-            <div className="text-lg font-medium leading-tight">
+            <div className="text-base font-medium leading-snug text-stone-900">
               {definition}
             </div>
           </div>
@@ -51,7 +55,7 @@ export function DefinitionCard({
 
       <CardContent className="py-0 pb-4 ml-8" onClick={(e) => e.stopPropagation()}>
         {example ? (
-          <div className="bg-white border rounded-md p-3 text-sm text-slate-600 mb-3 italic shadow-sm">
+          <div className="bg-stone-100 border border-stone-200 rounded-md p-3 text-sm text-stone-600 mb-3 italic">
             &quot;{example}&quot;
             {isAiGenerated && (
               <Tooltip>
@@ -67,8 +71,8 @@ export function DefinitionCard({
             )}
           </div>
         ) : (
-          <div className="bg-slate-100 border border-slate-200 border-dashed rounded-md p-3 text-sm text-slate-500 mb-3">
-            No example sentence found in dictionary.
+          <div className="bg-stone-100/60 border border-stone-200 rounded-md p-3 text-sm text-stone-300 mb-3 italic select-none">
+            No dictionary example
           </div>
         )}
 
@@ -76,7 +80,11 @@ export function DefinitionCard({
           <Button
             variant={example ? "outline" : "default"}
             size="sm"
-            className={`h-8 shadow-sm ${example ? "text-slate-600" : "bg-indigo-600 hover:bg-indigo-700"}`}
+            className={`h-8 ${
+              example
+                ? "border-stone-300 text-stone-500 hover:bg-stone-100 hover:text-stone-700"
+                : "bg-amber-500 hover:bg-amber-400 text-white font-medium"
+            }`}
             onClick={onGenerateExample}
             disabled={isGenerating}
           >

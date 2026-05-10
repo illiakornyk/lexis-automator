@@ -57,7 +57,7 @@ export function WordHeader({ word, phonetics }: WordHeaderProps) {
           </Button>
         </div>
       ) : fallbackText ? (
-        <p className="text-slate-500 mt-1">{fallbackText}</p>
+        <p className="text-stone-500 mt-1">{fallbackText}</p>
       ) : null;
     }
 
@@ -65,7 +65,7 @@ export function WordHeader({ word, phonetics }: WordHeaderProps) {
     if (usText === ukText) {
       return (
         <div className="flex items-center gap-3 mt-2">
-          {usText && <span className="text-slate-500">{usText}</span>}
+          {usText && <span className="text-stone-500">{usText}</span>}
           <div className="flex gap-2">
             {ukPhonetic && (
               <Button
