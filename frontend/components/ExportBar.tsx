@@ -82,7 +82,11 @@ export function ExportBar() {
                 onSelectDeck={setSelectedDeckId}
                 onCreateDeck={async (name) => {
                   const newDeck = await createDeck(name);
-                  if (newDeck) setSelectedDeckId(newDeck.id);
+                  if (newDeck) {
+                    setSelectedDeckId(newDeck.id);
+                    return newDeck.id;
+                  }
+                  return null;
                 }}
                 isLoading={decksLoading}
                 defaultNewDeckName={searchQuery}
@@ -179,26 +183,15 @@ export function ExportBar() {
                     <><Sparkles className="mr-1.5 h-4 w-4" />Fill {missingExamplesCount} missing example{missingExamplesCount !== 1 ? "s" : ""}</>
                   )}
                 </Button>
-              </div>
-            )}
-            <Button
-              onClick={onDownload}
-              disabled={isExporting || isGeneratingAll || selectedTemplateIds.length === 0 || !selectedDeckId}
-              className="w-full h-11 bg-amber-500 hover:bg-amber-400 text-white font-medium"
-              title={!selectedDeckId ? "Select a deck first" : undefined}
-            >
-              {isExporting ? (
-                <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />Exporting…</>
-              ) : (
-                <><ListPlus className="mr-1.5 h-4 w-4" />Export to Anki</>
               )}
               <Button
                 onClick={handleDownload}
-                disabled={isExporting || isGeneratingAll}
-                className="h-10 bg-indigo-600 hover:bg-indigo-700"
+                disabled={isExporting || isGeneratingAll || selectedTemplateIds.length === 0 || !selectedDeckId}
+                className="w-full h-11 bg-amber-500 hover:bg-amber-400 text-white font-medium"
+                title={!selectedDeckId ? "Select a deck first" : undefined}
               >
                 {isExporting ? (
-                  <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />Queuing…</>
+                  <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />Exporting…</>
                 ) : (
                   <><ExportIcon className="mr-1.5 h-4 w-4" />Export to Anki</>
                 )}

@@ -25,6 +25,9 @@ export function useWordSearch() {
   const [searchQuery, setSearchQuery] = useState<string>(() =>
     readSession<string>('lexis:searchQuery', ''),
   );
+  const [submittedQuery, setSubmittedQuery] = useState<string>(() =>
+    readSession<string>('lexis:submittedQuery', ''),
+  );
   const [wordData, setWordData] = useState<DictionaryEntry | null>(() =>
     readSession<DictionaryEntry | null>('lexis:wordData', null),
   );
@@ -36,6 +39,10 @@ export function useWordSearch() {
   useEffect(() => {
     writeSession('lexis:searchQuery', searchQuery);
   }, [searchQuery]);
+
+  useEffect(() => {
+    writeSession('lexis:submittedQuery', submittedQuery);
+  }, [submittedQuery]);
 
   useEffect(() => {
     writeSession('lexis:wordData', wordData);
@@ -51,13 +58,18 @@ export function useWordSearch() {
     );
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const clearSelection = () => {
+    setSelectedDefs([]);
+  };
+
+  const handleSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!searchQuery.trim()) return;
 
     setIsLoading(true);
     setWordData(null);
     setSelectedDefs([]);
+    setSubmittedQuery(searchQuery.trim());
 
     try {
       const data = await LexisApi.getDefinition(searchQuery.trim());
@@ -76,12 +88,14 @@ export function useWordSearch() {
   return {
     searchQuery,
     setSearchQuery,
+    submittedQuery,
     wordData,
     setWordData,
     isLoading,
     selectedDefs,
     setSelectedDefs,
     toggleSelection,
+    clearSelection,
     handleSearch,
   };
 }

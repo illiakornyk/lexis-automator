@@ -20,6 +20,7 @@ import { Save, Plus, Trash2, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 
 import { useTemplates } from "@/hooks/useTemplates";
+import { useAuth } from "@/components/AuthProvider";
 import type { CustomTemplate, FieldType } from "@/lib/types/template";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

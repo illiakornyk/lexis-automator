@@ -27,7 +27,6 @@ function LexisAutomatorUI() {
     aiGeneratedIds,
     toggleSelection,
     clearSelection,
-    handleQueueExport,
     handleSearch,
     handleGenerateExample,
   } = useLexisAutomatorContext();
