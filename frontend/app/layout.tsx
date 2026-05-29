@@ -25,6 +25,7 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "Lexis Automator",
   description: "Anki cards automation",
+  icons: { icon: "/favicon.ico" },
 };
 
 export default function RootLayout({

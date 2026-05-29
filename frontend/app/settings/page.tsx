@@ -2,7 +2,6 @@
 
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/components/AuthProvider';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Save, Loader2, Volume2, Key, Globe, User, X, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -28,7 +27,6 @@ export default function SettingsPage() {
     saveGoogleTtsKey,
     deleteGoogleTtsKey,
   } = useProfile();
-  const router = useRouter();
 
   const [accent, setAccent] = useState('US');
   const [gender, setGender] = useState('FEMALE');
@@ -40,10 +38,6 @@ export default function SettingsPage() {
   const [isDeletingKey, setIsDeletingKey] = useState(false);
   const [isSavingTtsKey, setIsSavingTtsKey] = useState(false);
   const [isDeletingTtsKey, setIsDeletingTtsKey] = useState(false);
-
-  useEffect(() => {
-    if (!authLoading && !user) router.push('/login');
-  }, [user, authLoading, router]);
 
   useEffect(() => {
     if (!profileLoading) {

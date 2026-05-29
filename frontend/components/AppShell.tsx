@@ -1,9 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Library, LayoutTemplate, LogOut, Settings, ArrowUp, BookOpen } from "lucide-react";
-import { DictionaryIcon } from "@/components/icons/DictionaryIcon";
 import { ExportQueuePanel } from "@/components/ExportQueuePanel";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
@@ -143,9 +143,7 @@ export function AppShell() {
           href="/"
           className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0"
         >
-          <div className="bg-indigo-600 rounded-md p-1.5 flex items-center justify-center">
-            <DictionaryIcon className="h-[18px] w-[18px] text-white" strokeWidth={1} />
-          </div>
+          <Image src="/lexis_automator_logo.svg" alt="Lexis Automator" width={32} height={32} className="rounded-md" />
           <span className="text-lg font-bold tracking-tight text-indigo-900 hidden sm:block">
             Lexis Automator
           </span>

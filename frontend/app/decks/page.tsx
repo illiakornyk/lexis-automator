@@ -63,11 +63,7 @@ export default function DecksPage() {
     });
   }, [decks, sortBy]);
 
-  if (authLoading) return null;
-  if (!user) {
-    router.push("/login");
-    return null;
-  }
+  if (authLoading || !user) return null;
 
   const startCreating = () => {
     setNewDeckName("");

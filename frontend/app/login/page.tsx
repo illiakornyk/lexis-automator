@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase";
@@ -55,9 +56,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4">
       {/* Logo */}
       <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity mb-8">
-        <div className="bg-indigo-600 rounded-md p-2 flex items-center justify-center">
-          <CheckCircle2 color="white" size={24} />
-        </div>
+        <Image src="/lexis_automator_logo.svg" alt="Lexis Automator" width={40} height={40} className="rounded-md" />
         <span className="text-2xl font-bold tracking-tight text-indigo-900">Lexis Automator</span>
       </Link>
 

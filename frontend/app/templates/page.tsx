@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
 import {
   DndContext,
@@ -50,7 +49,6 @@ interface CanvasItem {
 }
 
 export default function TemplatesPage() {
-  const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const { templates, isLoaded, addTemplate, updateTemplate, deleteTemplate } = useTemplates();
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
@@ -70,6 +68,14 @@ export default function TemplatesPage() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  const handleNewTemplate = () => {
+    setActiveTemplateId(null);
+    setName("New Template");
+    setIsCloze(false);
+    setFrontItems([]);
+    setBackItems([]);
+  };
+
   // Load template into local state
   useEffect(() => {
     if (!isLoaded) return;
@@ -87,19 +93,7 @@ export default function TemplatesPage() {
     }
   }, [activeTemplateId, isLoaded]);
 
-  if (authLoading) return null;
-  if (!user) {
-    router.push("/login");
-    return null;
-  }
-
-  const handleNewTemplate = () => {
-    setActiveTemplateId(null);
-    setName("New Template");
-    setIsCloze(false);
-    setFrontItems([]);
-    setBackItems([]);
-  };
+  if (authLoading || !user) return null;
 
   const handleSave = () => {
     if (!name.trim()) {
