@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { TextToSpeechClient } from '@google-cloud/text-to-speech';
+import { ConfigService } from '@nestjs/config';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseService } from '@/supabase/supabase.service';
 import { Database } from '@/types/database.types';
@@ -81,17 +81,11 @@ async function synthesizeWithApiKey(
 @Injectable()
 export class TtsService {
   private readonly logger = new Logger(TtsService.name);
-  private readonly client: TextToSpeechClient;
+  private readonly serverApiKey: string;
   private readonly supabase: SupabaseClient<Database>;
 
-  constructor(supabaseService: SupabaseService) {
-    try {
-      this.client = new TextToSpeechClient();
-    } catch (e) {
-      throw new Error(
-        `Failed to initialize Google TTS client — check GOOGLE_APPLICATION_CREDENTIALS. Cause: ${(e as Error).message}`,
-      );
-    }
+  constructor(config: ConfigService, supabaseService: SupabaseService) {
+    this.serverApiKey = config.getOrThrow<string>('GOOGLE_TTS_API_KEY');
     this.supabase = supabaseService.client;
   }
 
@@ -110,27 +104,15 @@ export class TtsService {
     userApiKey?: string,
   ): Promise<string> {
     const { name, languageCode } = resolveVoice(accent, gender);
+    const apiKey = userApiKey ?? this.serverApiKey;
 
     try {
-      let wavBuffer: Buffer;
-
-      if (userApiKey) {
-        wavBuffer = await synthesizeWithApiKey(text, name, languageCode, userApiKey);
-      } else {
-        const [response] = await this.client.synthesizeSpeech({
-          input: { text },
-          voice: { languageCode, name },
-          audioConfig: { audioEncoding: 'LINEAR16' },
-        });
-
-        if (!response.audioContent) {
-          throw new InternalServerErrorException(
-            'Google TTS returned empty audio payload',
-          );
-        }
-        wavBuffer = Buffer.from(response.audioContent);
-      }
-
+      const wavBuffer = await synthesizeWithApiKey(
+        text,
+        name,
+        languageCode,
+        apiKey,
+      );
       const webmBuffer = await convertWavToWebm(wavBuffer, this.logger);
       return webmBuffer.toString('base64');
     } catch (error) {

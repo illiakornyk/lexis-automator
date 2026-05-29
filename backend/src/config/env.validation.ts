@@ -33,9 +33,9 @@ class EnvironmentVariables {
   @IsString()
   REDIS_URL: string;
 
-  // Google TTS — path to service account JSON
+  // Google Cloud Text-to-Speech API key (REST authentication)
   @IsString()
-  GOOGLE_APPLICATION_CREDENTIALS: string;
+  GOOGLE_TTS_API_KEY: string;
 
   // Pixabay
   @IsString()
