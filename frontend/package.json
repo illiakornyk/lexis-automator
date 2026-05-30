@@ -6,7 +6,8 @@
     "dev": "next dev -p ${FRONTEND_PORT:-3001}",
     "build": "next build",
     "start": "next start -p 3001",
-    "lint": "eslint"
+    "lint": "eslint",
+    "gen:types": "npx supabase --workdir .. gen types typescript --linked > lib/types/database.types.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
