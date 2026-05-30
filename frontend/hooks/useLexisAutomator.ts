@@ -17,6 +17,7 @@ export function useLexisAutomator() {
   const save = useCardSave({
     wordData: search.wordData,
     selectedDefs: search.selectedDefs,
+    aiGeneratedIds: examples.aiGeneratedIds,
   });
 
   const cardExport = useCardExport({

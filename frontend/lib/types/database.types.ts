@@ -139,6 +139,7 @@ export type Database = {
           deck_id: string;
           definition: string;
           example: string | null;
+          example_is_ai: boolean;
           id: string;
           image_path: string | null;
           part_of_speech: string;
@@ -151,6 +152,7 @@ export type Database = {
           deck_id: string;
           definition: string;
           example?: string | null;
+          example_is_ai?: boolean;
           id?: string;
           image_path?: string | null;
           part_of_speech: string;
@@ -163,6 +165,7 @@ export type Database = {
           deck_id?: string;
           definition?: string;
           example?: string | null;
+          example_is_ai?: boolean;
           id?: string;
           image_path?: string | null;
           part_of_speech?: string;

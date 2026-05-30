@@ -47,6 +47,7 @@ export function useSaveToDecks() {
       phonetic: c.phonetic || null,
       definition: c.definition,
       example: c.example || null,
+      example_is_ai: c.exampleIsAi,
     }));
 
     const { error } = await supabase.from('saved_cards').insert(rows);

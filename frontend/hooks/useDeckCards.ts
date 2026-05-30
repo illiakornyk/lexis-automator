@@ -33,6 +33,7 @@ export function useDeckCards(deckId: string) {
           phonetic: c.phonetic,
           definition: c.definition,
           example: c.example,
+          exampleIsAi: c.example_is_ai ?? false,
           imagePath: c.image_path ?? null,
           createdAt: c.created_at,
         })),
@@ -66,14 +67,14 @@ export function useDeckCards(deckId: string) {
     );
   };
 
-  const updateCardExample = async (cardId: string, example: string) => {
+  const updateCardExample = async (cardId: string, example: string, isAi = false) => {
     setCards((prev) =>
-      prev.map((c) => (c.id === cardId ? { ...c, example } : c)),
+      prev.map((c) => (c.id === cardId ? { ...c, example, exampleIsAi: isAi } : c)),
     );
     try {
       const { error } = await supabase
         .from('saved_cards')
-        .update({ example })
+        .update({ example, example_is_ai: isAi })
         .eq('id', cardId);
       if (error) throw error;
     } catch {

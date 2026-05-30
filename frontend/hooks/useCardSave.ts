@@ -10,9 +10,10 @@ import type { CardToSave } from "@/lib/types/card";
 interface Props {
   wordData: DictionaryEntry | null;
   selectedDefs: string[];
+  aiGeneratedIds: Set<string>;
 }
 
-export function useCardSave({ wordData, selectedDefs }: Props) {
+export function useCardSave({ wordData, selectedDefs, aiGeneratedIds }: Props) {
   const { decks, isLoading: decksLoading, createDeck, incrementCardCount } = useDecks();
   const { saveCards } = useSaveToDecks();
   const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
@@ -35,6 +36,7 @@ export function useCardSave({ wordData, selectedDefs }: Props) {
         phonetic: wordData.phonetics?.find((p) => p.text)?.text || "",
         definition: def.definition,
         example: def.example || "",
+        exampleIsAi: aiGeneratedIds.has(defId),
       });
     }
 

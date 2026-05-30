@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ExampleActions } from "@/components/ExampleActions";
 import { useDecks } from "@/hooks/useDecks";
 import { useDeckCards } from "@/hooks/useDeckCards";
@@ -121,7 +122,7 @@ export default function DeckDetailPage({
     setGeneratingCardIds((prev) => new Set([...prev, cardId]));
     try {
       const res = await LexisApi.generateExample(word, definition);
-      await updateCardExample(cardId, res.example);
+      await updateCardExample(cardId, res.example, true);
       toast.success("Example generated.");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to generate example.");
@@ -139,7 +140,7 @@ export default function DeckDetailPage({
     const generateOne = async (card: (typeof missing)[number]) => {
       try {
         const res = await LexisApi.generateExample(card.word, card.definition);
-        await updateCardExample(card.id, res.example);
+        await updateCardExample(card.id, res.example, true);
         return true;
       } catch {
         toast.error(`Failed to generate example for "${card.word}".`);
@@ -388,6 +389,14 @@ export default function DeckDetailPage({
                     <td className="px-4 py-3 hidden md:table-cell max-w-xs">
                       {card.example ? (
                         <div className="flex items-start gap-1.5">
+                          {card.exampleIsAi && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Sparkles className="h-3.5 w-3.5 shrink-0 mt-0.5 text-indigo-400" />
+                              </TooltipTrigger>
+                              <TooltipContent>AI-generated example</TooltipContent>
+                            </Tooltip>
+                          )}
                           <span className="line-clamp-2 text-slate-500 italic flex-1">{card.example}</span>
                           <ExampleActions
                             isGenerating={generatingCardIds.has(card.id)}

@@ -4,4 +4,5 @@ export interface CardToSave {
   phonetic: string;
   definition: string;
   example: string;
+  exampleIsAi: boolean;
 }
