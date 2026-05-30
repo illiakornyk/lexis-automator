@@ -59,7 +59,7 @@ export function ExportBar() {
 
   return (
     <div ref={barRef} className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-[0_-4px_24px_-8px_rgba(0,0,0,0.12)]">
-      <div className="max-w-4xl mx-auto px-6 py-4">
+      <div className="max-w-6xl mx-auto px-6 py-4">
 
         <div className="flex items-center gap-2 mb-4">
           <span className="bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
@@ -111,19 +111,19 @@ export function ExportBar() {
           </div>
 
           {/* Zone 2 — Card Templates */}
-          <div className="flex flex-col gap-2 sm:px-6 flex-1 min-w-0">
+          <div className="flex flex-col gap-2 sm:px-6 sm:w-72 min-w-0 shrink-0">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Card templates</p>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 items-start">
+            <div className="grid grid-cols-1 gap-y-1.5 items-start max-h-32 overflow-y-auto pr-1 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-track]:bg-transparent">
               {isLoaded ? (
                 templates.length > 0 ? (
                   templates.map((t) => (
-                    <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-600 min-w-0">
+                    <label key={t.id} className="flex items-start gap-1.5 cursor-pointer text-sm text-slate-600 min-w-0" title={t.name}>
                       <Checkbox
                         checked={selectedTemplateIds.includes(t.id)}
                         onCheckedChange={() => toggleTemplateId(t.id)}
-                        className="shrink-0"
+                        className="shrink-0 mt-0.5"
                       />
-                      <span className="truncate">{t.name}</span>
+                      <span className="break-words leading-snug">{t.name}</span>
                     </label>
                   ))
                 ) : (
@@ -135,6 +135,9 @@ export function ExportBar() {
             </div>
           </div>
 
+          {/* Spacer — absorbs extra width */}
+          <div className="hidden sm:block flex-1" />
+
           {/* Zone 3 — Voice */}
           <div className="flex flex-col gap-2 sm:px-6 shrink-0">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Voice</p>
@@ -142,7 +145,7 @@ export function ExportBar() {
               <div className="flex items-center gap-2">
                 <Globe className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                 <Select value={accent} onValueChange={setAccent}>
-                  <SelectTrigger className="w-[110px] h-8 text-sm">
+                  <SelectTrigger className="w-[140px] h-8 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -154,7 +157,7 @@ export function ExportBar() {
               <div className="flex items-center gap-2">
                 <User className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                 <Select value={gender} onValueChange={setGender}>
-                  <SelectTrigger className="w-[110px] h-8 text-sm">
+                  <SelectTrigger className="w-[140px] h-8 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

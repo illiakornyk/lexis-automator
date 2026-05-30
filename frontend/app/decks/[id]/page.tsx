@@ -133,19 +133,33 @@ export default function DeckDetailPage({
     const missing = cards.filter((c) => !c.example);
     if (missing.length === 0) return;
     setIsGeneratingAll(true);
-    let successCount = 0;
-    for (const card of missing) {
-      setGeneratingCardIds((prev) => new Set([...prev, card.id]));
+    setGeneratingCardIds((prev) => new Set([...prev, ...missing.map((c) => c.id)]));
+
+    const generateOne = async (card: (typeof missing)[number]) => {
       try {
         const res = await LexisApi.generateExample(card.word, card.definition);
         await updateCardExample(card.id, res.example);
-        successCount++;
+        return true;
       } catch {
         toast.error(`Failed to generate example for "${card.word}".`);
+        return false;
       } finally {
         setGeneratingCardIds((prev) => { const next = new Set(prev); next.delete(card.id); return next; });
       }
-    }
+    };
+
+    // Run with a concurrency cap so we don't hit LLM rate limits.
+    const CONCURRENCY = 5;
+    const queue = [...missing];
+    let successCount = 0;
+    const worker = async () => {
+      let card: (typeof missing)[number] | undefined;
+      while ((card = queue.shift())) {
+        if (await generateOne(card)) successCount++;
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, missing.length) }, worker));
+
     setIsGeneratingAll(false);
     if (successCount > 0) toast.success(`Generated ${successCount} example${successCount !== 1 ? "s" : ""}.`);
   };
@@ -227,21 +241,21 @@ export default function DeckDetailPage({
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 sm:divide-x sm:divide-slate-200">
 
             {/* Zone 1 — Templates */}
-            <div className="flex flex-col gap-2 sm:pr-6 sm:w-[30%] min-w-0">
+            <div className="flex flex-col gap-2 sm:pr-6 sm:w-[35%] min-w-0">
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
                 <LayoutTemplate size={12} />
                 Templates
               </p>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+              <div className="grid grid-cols-1 gap-y-1.5 items-start max-h-32 overflow-y-auto pr-1 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-track]:bg-transparent">
                 {templatesLoaded ? (
                   templates.map((t) => (
-                    <label key={t.id} className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-600 min-w-0">
+                    <label key={t.id} className="flex items-start gap-1.5 cursor-pointer text-sm text-slate-600 min-w-0" title={t.name}>
                       <Checkbox
                         checked={selectedTemplateIds.includes(t.id)}
                         onCheckedChange={() => toggleTemplate(t.id)}
-                        className="shrink-0"
+                        className="shrink-0 mt-0.5"
                       />
-                      <span className="truncate">{t.name}</span>
+                      <span className="break-words leading-snug">{t.name}</span>
                     </label>
                   ))
                 ) : (
@@ -279,7 +293,7 @@ export default function DeckDetailPage({
             </div>
 
             {/* Zone 3 — Export */}
-            <div className="flex flex-col gap-2 sm:pl-6 sm:w-[25%]">
+            <div className="flex flex-col gap-2 sm:pl-6 sm:w-[35%] sm:flex-1">
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
                 <PackagePlus size={12} />
                 Export
