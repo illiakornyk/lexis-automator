@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ExampleActions } from "@/components/ExampleActions";
+import { ExampleEditDialog } from "@/components/ExampleEditDialog";
 import { useDecks } from "@/hooks/useDecks";
 import { useDeckCards } from "@/hooks/useDeckCards";
 import { useTemplates } from "@/hooks/useTemplates";
@@ -54,6 +55,7 @@ export default function DeckDetailPage({
   const [accent, setAccent] = useState("US");
   const [gender, setGender] = useState("FEMALE");
   const [pickerCardId, setPickerCardId] = useState<string | null>(null);
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [generatingCardIds, setGeneratingCardIds] = useState<Set<string>>(new Set());
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
   const [imageSignedUrls, setImageSignedUrls] = useState<Record<string, string>>({});
@@ -401,22 +403,39 @@ export default function DeckDetailPage({
                           <ExampleActions
                             isGenerating={generatingCardIds.has(card.id)}
                             onRegenerate={() => handleGenerateExample(card.id, card.word, card.definition)}
+                            onEdit={() => setEditingCardId(card.id)}
                             onClear={() => updateCardExample(card.id, "")}
                           />
                         </div>
                       ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                          disabled={generatingCardIds.has(card.id)}
-                          onClick={() => handleGenerateExample(card.id, card.word, card.definition)}
-                        >
-                          {generatingCardIds.has(card.id)
-                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            : <><Sparkles className="h-3.5 w-3.5 mr-1" />Generate</>
-                          }
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                            disabled={generatingCardIds.has(card.id)}
+                            onClick={() => handleGenerateExample(card.id, card.word, card.definition)}
+                          >
+                            {generatingCardIds.has(card.id)
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : <><Sparkles className="h-3.5 w-3.5 mr-1" />Generate</>
+                            }
+                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 shrink-0 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
+                                disabled={generatingCardIds.has(card.id)}
+                                onClick={() => setEditingCardId(card.id)}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Write your own example</TooltipContent>
+                          </Tooltip>
+                        </div>
                       )}
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell">
@@ -474,6 +493,16 @@ export default function DeckDetailPage({
           word={cards.find((c) => c.id === pickerCardId)?.word ?? ""}
           currentImagePath={cards.find((c) => c.id === pickerCardId)?.imagePath ?? null}
           onImageSaved={(imagePath) => handleImageSaved(pickerCardId, imagePath)}
+        />
+      )}
+
+      {editingCardId && (
+        <ExampleEditDialog
+          open={!!editingCardId}
+          onOpenChange={(open) => { if (!open) setEditingCardId(null); }}
+          word={cards.find((c) => c.id === editingCardId)?.word ?? ""}
+          initialValue={cards.find((c) => c.id === editingCardId)?.example ?? ""}
+          onSave={(example) => updateCardExample(editingCardId, example, false)}
         />
       )}
     </div>
