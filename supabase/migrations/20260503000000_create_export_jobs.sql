@@ -23,6 +23,7 @@ CREATE INDEX IF NOT EXISTS export_jobs_expires_idx     ON public.export_jobs(exp
 
 ALTER TABLE public.export_jobs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own export jobs" ON public.export_jobs;
 CREATE POLICY "Users can view own export jobs"
   ON public.export_jobs FOR SELECT
   USING (auth.uid() = user_id);

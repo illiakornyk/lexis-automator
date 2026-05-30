@@ -1,6 +1,6 @@
 -- Add image_path column to saved_cards
 ALTER TABLE public.saved_cards
-  ADD COLUMN image_path TEXT;
+  ADD COLUMN IF NOT EXISTS image_path TEXT;
 
 -- Grant UPDATE so the backend (service_role) can set image_path
 -- Authenticated users get UPDATE too so the RLS policy below applies
@@ -8,6 +8,7 @@ GRANT UPDATE ON public.saved_cards TO authenticated;
 GRANT UPDATE ON public.saved_cards TO service_role;
 
 -- RLS policy: users can update only their own cards (e.g. to clear image_path client-side if needed)
+DROP POLICY IF EXISTS "Users can update own saved cards" ON public.saved_cards;
 CREATE POLICY "Users can update own saved cards" ON public.saved_cards
   FOR UPDATE USING (auth.uid() = user_id);
 
@@ -23,6 +24,7 @@ INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
   ON CONFLICT (id) DO NOTHING;
 
 -- Storage RLS: authenticated users can manage only their own folder ({userId}/*)
+DROP POLICY IF EXISTS "Users can upload own images" ON storage.objects;
 CREATE POLICY "Users can upload own images" ON storage.objects
   FOR INSERT TO authenticated
   WITH CHECK (
@@ -30,6 +32,7 @@ CREATE POLICY "Users can upload own images" ON storage.objects
     AND (string_to_array(name, '/'))[1] = auth.uid()::text
   );
 
+DROP POLICY IF EXISTS "Users can read own images" ON storage.objects;
 CREATE POLICY "Users can read own images" ON storage.objects
   FOR SELECT TO authenticated
   USING (
@@ -37,6 +40,7 @@ CREATE POLICY "Users can read own images" ON storage.objects
     AND (string_to_array(name, '/'))[1] = auth.uid()::text
   );
 
+DROP POLICY IF EXISTS "Users can delete own images" ON storage.objects;
 CREATE POLICY "Users can delete own images" ON storage.objects
   FOR DELETE TO authenticated
   USING (
@@ -44,6 +48,7 @@ CREATE POLICY "Users can delete own images" ON storage.objects
     AND (string_to_array(name, '/'))[1] = auth.uid()::text
   );
 
+DROP POLICY IF EXISTS "Users can update own images" ON storage.objects;
 CREATE POLICY "Users can update own images" ON storage.objects
   FOR UPDATE TO authenticated
   USING (

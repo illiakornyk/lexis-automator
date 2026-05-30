@@ -6,22 +6,31 @@ ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS ai_key_id uuid,
   ADD COLUMN IF NOT EXISTS ai_provider text;
 
--- Migrate existing plain-text keys into Vault
+-- Migrate existing plain-text keys into Vault.
+-- Guarded: only runs if the legacy column still exists (it may already be dropped
+-- on environments where this migration was partially applied manually).
 DO $$
 DECLARE
   rec record;
   new_key_id uuid;
 BEGIN
-  FOR rec IN
-    SELECT id, openai_api_key FROM public.profiles WHERE openai_api_key IS NOT NULL
-  LOOP
-    SELECT vault.create_secret(rec.openai_api_key, 'ai_key_' || rec.id::text)
-      INTO new_key_id;
-    UPDATE public.profiles
-      SET ai_key_id = new_key_id,
-          ai_provider = 'openai'
-      WHERE id = rec.id;
-  END LOOP;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'profiles'
+      AND column_name = 'openai_api_key'
+  ) THEN
+    FOR rec IN
+      SELECT id, openai_api_key FROM public.profiles WHERE openai_api_key IS NOT NULL
+    LOOP
+      SELECT vault.create_secret(rec.openai_api_key, 'ai_key_' || rec.id::text)
+        INTO new_key_id;
+      UPDATE public.profiles
+        SET ai_key_id = new_key_id,
+            ai_provider = 'openai'
+        WHERE id = rec.id;
+    END LOOP;
+  END IF;
 END;
 $$;
 
