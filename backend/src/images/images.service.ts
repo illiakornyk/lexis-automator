@@ -58,7 +58,18 @@ export class ImagesService {
 
     try {
       const resp = await firstValueFrom(
-        this.httpService.get<ArrayBuffer>(url, { responseType: 'arraybuffer' }),
+        this.httpService.get<ArrayBuffer>(url, {
+          responseType: 'arraybuffer',
+          // Many hosts (e.g. Wikimedia) reject requests with a default/library
+          // User-Agent. Identify the app per their UA policy.
+          headers: {
+            'User-Agent':
+              'LexisAutomator/1.0 (https://github.com/illiakornyk/lexis-automator)',
+            Accept: 'image/*',
+          },
+          timeout: 10000,
+          maxRedirects: 5,
+        }),
       );
       buffer = Buffer.from(resp.data);
     } catch (error: unknown) {
