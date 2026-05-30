@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { ExampleActions } from "@/components/ExampleActions";
 import { useDecks } from "@/hooks/useDecks";
 import { useDeckCards } from "@/hooks/useDeckCards";
 import { useTemplates } from "@/hooks/useTemplates";
@@ -386,7 +387,14 @@ export default function DeckDetailPage({
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell max-w-xs">
                       {card.example ? (
-                        <span className="line-clamp-2 text-slate-500 italic">{card.example}</span>
+                        <div className="flex items-start gap-1.5">
+                          <span className="line-clamp-2 text-slate-500 italic flex-1">{card.example}</span>
+                          <ExampleActions
+                            isGenerating={generatingCardIds.has(card.id)}
+                            onRegenerate={() => handleGenerateExample(card.id, card.word, card.definition)}
+                            onClear={() => updateCardExample(card.id, "")}
+                          />
+                        </div>
                       ) : (
                         <Button
                           variant="ghost"
